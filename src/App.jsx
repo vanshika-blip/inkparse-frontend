@@ -658,8 +658,23 @@ export default function App() {
         .footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--border2);text-align:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
         .footer em{font-style:italic;font-family:'Lora',serif;color:var(--ink3);letter-spacing:0;font-size:11px}
 
+        /* ── UPLOAD HERO LAYOUT ── */
+        .upload-layout{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;min-height:70vh;padding:20px 0}
+        .upload-left{display:flex;flex-direction:column;gap:0}
+        .upload-left .eyebrow{margin-bottom:18px}
+        .upload-left h1{margin-bottom:24px}
+        .hero-desc{font-family:'Lora',serif;font-size:15px;line-height:1.85;color:var(--ink2);margin-bottom:32px;font-style:italic;max-width:420px}
+        .hero-features{display:flex;flex-direction:column;gap:10px}
+        .feat{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;gap:10px}
+        .feat::after{content:'';flex:1;height:1px;background:var(--border2)}
+        .upload-right{display:flex;flex-direction:column;gap:0}
+        .upload-right .drop{min-height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+
         /* ── RESPONSIVE: TABLET (max 900px) ── */
         @media(max-width:900px){
+          .upload-layout{grid-template-columns:1fr;gap:40px;min-height:auto;padding:0}
+          .hero-desc{font-size:14px;margin-bottom:24px}
+          .upload-right .drop{min-height:240px}
           .wrap{padding:36px 20px 80px}
           .hdr{margin-bottom:36px;padding-bottom:20px}
           .brand-name{font-size:24px}
@@ -673,6 +688,10 @@ export default function App() {
 
         /* ── RESPONSIVE: MOBILE (max 600px) ── */
         @media(max-width:600px){
+          .upload-layout{grid-template-columns:1fr;gap:28px;min-height:auto}
+          .hero-desc{font-size:13px;margin-bottom:18px}
+          .hero-features{display:none}
+          .upload-right .drop{min-height:200px}
           .wrap{padding:20px 14px 60px}
           .hdr{margin-bottom:24px;padding-bottom:16px;flex-direction:row;align-items:center}
           .hdr-icon{font-size:22px}
@@ -782,42 +801,55 @@ export default function App() {
 
           {/* UPLOAD */}
           {step==="upload" && (
-            <div>
-              <div className="page-title">
+            <div className="upload-layout">
+              {/* LEFT — hero text */}
+              <div className="upload-left">
                 <div className="eyebrow">Smart Notes Reader</div>
                 <h1>Your scribbles,<br/><em>perfectly structured.</em></h1>
+                <p className="hero-desc">
+                  Snap a photo of any handwritten notes — messy, rotated, sketchy — and Scrivly turns them into
+                  clean structured text plus an interactive flowchart. Instantly.
+                </p>
+                <div className="hero-features">
+                  <div className="feat">✦ Any handwriting style</div>
+                  <div className="feat">✦ Auto flowchart generation</div>
+                  <div className="feat">✦ Export JPG &amp; DOCX</div>
+                </div>
               </div>
 
-              {!image ? (
-                <div className={`drop ${dragOver?"over":""}`}
-                  onDragOver={e=>{e.preventDefault();setDragOver(true)}}
-                  onDragLeave={()=>setDragOver(false)}
-                  onDrop={handleDrop}
-                  onClick={()=>fileRef.current.click()}>
-                  <span className="drop-icon">📓</span>
-                  <div className="drop-title">Drop your handwritten notes</div>
-                  <div className="drop-sub" style={{marginTop:6}}>Any photo · any handwriting · any angle</div>
-                  <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])} />
-                </div>
-              ) : (
-                <div>
-                  <div className="img-prev">
-                    <span className="img-badge">Ready to read</span>
-                    <img src={image} alt="preview" />
+              {/* RIGHT — upload box */}
+              <div className="upload-right">
+                {!image ? (
+                  <div className={`drop ${dragOver?"over":""}`}
+                    onDragOver={e=>{e.preventDefault();setDragOver(true)}}
+                    onDragLeave={()=>setDragOver(false)}
+                    onDrop={handleDrop}
+                    onClick={()=>fileRef.current.click()}>
+                    <span className="drop-icon">📓</span>
+                    <div className="drop-title">Drop your handwritten notes</div>
+                    <div className="drop-sub" style={{marginTop:6}}>Any photo · any handwriting · any angle</div>
+                    <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])} />
                   </div>
-                  <div className="row" style={{marginBottom:14}}>
-                    <button className="btn btn-ghost" onClick={reset}>↩ Change image</button>
+                ) : (
+                  <div>
+                    <div className="img-prev">
+                      <span className="img-badge">Ready to read</span>
+                      <img src={image} alt="preview" />
+                    </div>
+                    <div className="row" style={{marginBottom:14}}>
+                      <button className="btn btn-ghost" onClick={reset}>↩ Change image</button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {loading
-                ? <div className="loading-wrap"><div className="spin"/><p>{loadMsg}</p></div>
-                : <button className="btn btn-main" style={{marginTop:24}} disabled={!image||loading} onClick={analyze}>
-                    ✦ &nbsp; Read & Structure Notes
-                  </button>
-              }
-              {error && <div className="err">⚠ {error}</div>}
+                {loading
+                  ? <div className="loading-wrap"><div className="spin"/><p>{loadMsg}</p></div>
+                  : <button className="btn btn-main" style={{marginTop:20}} disabled={!image||loading} onClick={analyze}>
+                      ✦ &nbsp; Read & Structure Notes
+                    </button>
+                }
+                {error && <div className="err">⚠ {error}</div>}
+              </div>
             </div>
           )}
 
