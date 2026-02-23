@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 
@@ -104,17 +104,17 @@ async function makeDocxBlob(title, notes) {
   return Packer.toBlob(doc);
 }
 
-// ── NODE PALETTE — warm ink tones ─────────────────────────────────────────────
+// ── NODE PALETTE ──────────────────────────────────────────────────────────────
 const PALETTE = [
-  { fill:"#2c1810", stroke:"#8b5e3c", text:"#f5f0e8", glow:"rgba(139,94,60,0.35)" },
-  { fill:"#1a2a1a", stroke:"#5a7a3a", text:"#f0f5e8", glow:"rgba(90,122,58,0.35)" },
-  { fill:"#1a1a2a", stroke:"#4a5a8a", text:"#e8ecf5", glow:"rgba(74,90,138,0.35)" },
-  { fill:"#2a1a10", stroke:"#a0622a", text:"#f5ede0", glow:"rgba(160,98,42,0.35)" },
-  { fill:"#2a1a2a", stroke:"#7a3a6a", text:"#f5e8f2", glow:"rgba(122,58,106,0.35)" },
-  { fill:"#101a2a", stroke:"#2a6a8a", text:"#e0eef5", glow:"rgba(42,106,138,0.35)" },
+  { fill:"#1e120a", stroke:"#7a5230", text:"#f0ead8", glow:"rgba(122,82,48,0.4)" },
+  { fill:"#0f1e12", stroke:"#3d6b3a", text:"#e8f0e5", glow:"rgba(61,107,58,0.4)" },
+  { fill:"#0f1220", stroke:"#3a4d7a", text:"#e5eaf5", glow:"rgba(58,77,122,0.4)" },
+  { fill:"#1e1408", stroke:"#8c5c22", text:"#f5ead8", glow:"rgba(140,92,34,0.4)" },
+  { fill:"#1e0f1e", stroke:"#6b3a6b", text:"#f5e5f5", glow:"rgba(107,58,107,0.4)" },
+  { fill:"#081420", stroke:"#206080", text:"#d8eef5", glow:"rgba(32,96,128,0.4)" },
 ];
 
-const NW = 164, NH = 52;
+const NW = 168, NH = 54;
 
 function getNodeColor(id, nodes) {
   return PALETTE[Object.keys(nodes).indexOf(id) % PALETTE.length];
@@ -124,11 +124,13 @@ function NodeShape({ n, col, selected, onMouseDown, onDoubleClick }) {
   const { x, y } = n;
   const w = NW, h = NH;
   const filter = selected
-    ? `drop-shadow(0 0 10px ${col.glow}) drop-shadow(0 2px 8px rgba(0,0,0,0.3))`
-    : `drop-shadow(0 2px 6px rgba(0,0,0,0.15))`;
+    ? `drop-shadow(0 0 12px ${col.glow}) drop-shadow(0 2px 10px rgba(0,0,0,0.4))`
+    : `drop-shadow(0 2px 8px rgba(0,0,0,0.2))`;
   const commonProps = {
-    fill: col.fill, stroke: selected ? col.text : col.stroke,
-    strokeWidth: selected ? 2 : 1.5, filter,
+    fill: col.fill,
+    stroke: selected ? col.text : col.stroke,
+    strokeWidth: selected ? 2 : 1.5,
+    filter,
     style: { transition: "filter 0.2s, stroke 0.15s" }
   };
   return (
@@ -139,17 +141,18 @@ function NodeShape({ n, col, selected, onMouseDown, onDoubleClick }) {
         <rect x={x} y={y} width={w} height={h} rx={h/2} {...commonProps} />
       ) : (
         <>
-          <rect x={x} y={y} width={w} height={h} rx={6} {...commonProps} />
+          <rect x={x} y={y} width={w} height={h} rx={5} {...commonProps} />
           <rect x={x} y={y} width={3} height={h} rx={2} fill={col.stroke} style={{pointerEvents:"none"}} />
         </>
       )}
       <text x={x+w/2} y={y+h/2+1} textAnchor="middle" dominantBaseline="middle"
-        fill={col.text} fontSize={11.5} fontFamily="'Lora',serif" fontStyle="italic"
+        fill={col.text} fontSize={11} fontFamily="'Cormorant Garamond',serif" fontWeight="500"
+        letterSpacing="0.3"
         style={{ pointerEvents:"none", userSelect:"none" }}>
-        {n.label.length>20 ? n.label.slice(0,18)+"…" : n.label}
+        {n.label.length>21 ? n.label.slice(0,19)+"…" : n.label}
       </text>
       {selected && (
-        <circle cx={x+w} cy={y+h/2} r={7} fill={col.stroke} stroke="#f5f0e8" strokeWidth={1.5}
+        <circle cx={x+w} cy={y+h/2} r={7} fill={col.stroke} stroke="#f0ead8" strokeWidth={1.5}
           style={{ cursor:"crosshair" }}
           onMouseDown={e=>{e.stopPropagation();onMouseDown(e,"connect");}} />
       )}
@@ -208,7 +211,6 @@ function FlowEditor({ nodes, edges, onChange }) {
   const onMU = () => { setDragging(null); setPanningSt(null); };
   const onWheel = e => { e.preventDefault(); setZoom(z=>Math.max(0.25,Math.min(2,z-e.deltaY*0.001))); };
 
-  // Touch support for mobile panning
   const onTouchStart = e => {
     if (e.touches.length===1) {
       const t=e.touches[0];
@@ -256,7 +258,7 @@ function FlowEditor({ nodes, edges, onChange }) {
     const ex=t.x-ux*NW*0.55,ey=t.y-uy*NH*0.55;
     const mx=(sx+ex)/2-uy*30,my=(sy+ey)/2+ux*30;
     const isSel=selEdge===i;
-    const stroke=isSel?"#8b5e3c":"#c4b8a0";
+    const stroke=isSel?"#7a5230":"#b5a88a";
     const midX=(sx+2*mx+ex)/4,midY=(sy+2*my+ey)/4;
     return (
       <g onClick={ev=>{ev.stopPropagation();setSelEdge(i);setSelNode(null);}}>
@@ -267,14 +269,14 @@ function FlowEditor({ nodes, edges, onChange }) {
         {e.label && (
           <g onDoubleClick={ev=>{ev.stopPropagation();setEditPopup({type:"edge",id:i,label:e.label});}}>
             <rect x={midX-e.label.length*3.2-6} y={midY-9} width={e.label.length*6.4+12} height={18} rx={9}
-              fill="#f5f0e8" stroke={stroke} strokeWidth={1} />
+              fill="#f0ead8" stroke={stroke} strokeWidth={1} />
             <text x={midX} y={midY+1} textAnchor="middle" dominantBaseline="middle"
-              fill="#5c4a35" fontSize={10} fontFamily="'Lora',serif" fontStyle="italic">{e.label}</text>
+              fill="#3d2810" fontSize={10} fontFamily="'Cormorant Garamond',serif">{e.label}</text>
           </g>
         )}
         {isSel && (
           <g style={{cursor:"pointer"}} onClick={ev=>{ev.stopPropagation();deleteEdge(i);}}>
-            <circle cx={midX} cy={midY} r={10} fill="#8b3a2a" stroke="#d4907a" strokeWidth={1.5} />
+            <circle cx={midX} cy={midY} r={10} fill="#7a2810" stroke="#c4806a" strokeWidth={1.5} />
             <text x={midX} y={midY+1} textAnchor="middle" dominantBaseline="middle" fill="#f5e0d8" fontSize={12} style={{pointerEvents:"none"}}>✕</text>
           </g>
         )}
@@ -286,14 +288,13 @@ function FlowEditor({ nodes, edges, onChange }) {
     if (!connecting||!nodes[connecting]) return null;
     const f=nodeCenter(nodes[connecting]);
     return <line x1={f.x} y1={f.y} x2={mousePos.x} y2={mousePos.y}
-      stroke="#8b5e3c" strokeWidth={1.5} strokeDasharray="5 3" style={{pointerEvents:"none"}} />;
+      stroke="#7a5230" strokeWidth={1.5} strokeDasharray="5 3" style={{pointerEvents:"none"}} />;
   };
 
   return (
     <div style={{display:"flex",flexDirection:"column",flex:1,minHeight:0}}>
-      {/* Toolbar */}
       <div className="fe-toolbar">
-        <button className="fe-btn" onClick={addNode}>✦ Add Node</button>
+        <button className="fe-btn" onClick={addNode}>＋ Node</button>
         {selNode && <>
           <button className="fe-btn fe-btn-connect" onClick={()=>setConnecting(connecting?null:selNode)}>
             {connecting===selNode?"✕ Cancel":"→ Connect"}
@@ -301,42 +302,44 @@ function FlowEditor({ nodes, edges, onChange }) {
           <select className="fe-sel" value={nodes[selNode]?.shape||"rect"} onChange={e=>{
             onChange({...nodesR.current,[selNode]:{...nodesR.current[selNode],shape:e.target.value}},edgesR.current);
           }}>
-            <option value="rect">▭ Box</option>
+            <option value="rect">▭ Rectangle</option>
             <option value="round">◉ Pill</option>
             <option value="diamond">◇ Diamond</option>
           </select>
           <button className="fe-btn fe-btn-edit" onClick={()=>setEditPopup({type:"node",id:selNode,label:nodes[selNode]?.label||""})}>
-            ✎ Label
+            ✎ Rename
           </button>
-          <button className="fe-btn fe-btn-del" onClick={()=>deleteNode(selNode)}>✕</button>
+          <button className="fe-btn fe-btn-del" onClick={()=>deleteNode(selNode)}>✕ Delete</button>
         </>}
         {selEdge!==null&&!selNode && (
           <button className="fe-btn fe-btn-edit" onClick={()=>setEditPopup({type:"edge",id:selEdge,label:edges[selEdge]?.label||""})}>
-            ✎ Edge Label
+            ✎ Label Edge
           </button>
         )}
-        {connecting && <span className="fe-hint">→ Click a node to connect</span>}
+        {connecting && <span className="fe-hint">Select a target node to connect</span>}
         <div style={{flex:1}}/>
-        <button className="fe-btn" onClick={()=>setZoom(z=>Math.min(2,z+0.15))}>＋</button>
+        <button className="fe-btn fe-zoom-btn" onClick={()=>setZoom(z=>Math.min(2,z+0.15))}>＋</button>
         <span className="fe-zoom">{Math.round(zoom*100)}%</span>
-        <button className="fe-btn" onClick={()=>setZoom(z=>Math.max(0.25,z-0.15))}>－</button>
-        <button className="fe-btn" onClick={()=>{setZoom(0.9);setPan({x:40,y:20});}}>⊡</button>
+        <button className="fe-btn fe-zoom-btn" onClick={()=>setZoom(z=>Math.max(0.25,z-0.15))}>－</button>
+        <button className="fe-btn" onClick={()=>{setZoom(0.9);setPan({x:40,y:20});}}>⊡ Reset</button>
       </div>
 
-      {/* Canvas */}
       <svg ref={svgRef} style={{flex:1,minHeight:500,display:"block",cursor:panningSt?"grabbing":connecting?"crosshair":"grab",background:"transparent",touchAction:"none"}}
         onMouseDown={onSvgMD} onMouseMove={onMM} onMouseUp={onMU} onWheel={onWheel}
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         <defs>
           <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-            <polygon points="0 0,10 3.5,0 7" fill="#c4b8a0" />
+            <polygon points="0 0,10 3.5,0 7" fill="#b5a88a" />
           </marker>
           <marker id="arrow-sel" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-            <polygon points="0 0,10 3.5,0 7" fill="#8b5e3c" />
+            <polygon points="0 0,10 3.5,0 7" fill="#7a5230" />
           </marker>
-          <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="1" fill="rgba(139,115,85,0.18)" />
+          <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+            <circle cx="1.5" cy="1.5" r="1" fill="rgba(160,130,90,0.14)" />
           </pattern>
+          <filter id="vignette" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="40" result="blur"/>
+          </filter>
         </defs>
         <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
           <rect x="-2000" y="-2000" width="6000" height="6000" fill="url(#dots)" />
@@ -352,24 +355,35 @@ function FlowEditor({ nodes, edges, onChange }) {
         </g>
       </svg>
 
-      <div className="fe-hint-bar">Double-click to edit · Drag to move · Select + → Connect · Scroll to zoom</div>
+      <div className="fe-hint-bar">Double-click to rename · Drag to reposition · Select node, then → Connect · Scroll to zoom</div>
 
       {editPopup && (
         <div className="ep-overlay" onClick={()=>setEditPopup(null)}>
           <div className="ep" onClick={e=>e.stopPropagation()}>
-            <div className="ep-title">{editPopup.type==="node"?"Edit Label":"Edge Label"}</div>
+            <div className="ep-title">{editPopup.type==="node"?"Rename Node":"Set Edge Label"}</div>
             <input className="ep-input" autoFocus value={editPopup.label}
               onChange={e=>setEditPopup({...editPopup,label:e.target.value})}
               onKeyDown={e=>{if(e.key==="Enter")saveEdit();if(e.key==="Escape")setEditPopup(null);}}
-              placeholder="Enter label..." />
+              placeholder="Enter label…" />
             <div className="ep-row">
-              <button className="ep-ok" onClick={saveEdit}>Save</button>
+              <button className="ep-ok" onClick={saveEdit}>Confirm</button>
               <button className="ep-cancel" onClick={()=>setEditPopup(null)}>Cancel</button>
             </div>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+// ── LOADING DOTS ──────────────────────────────────────────────────────────────
+function LoadingDots() {
+  return (
+    <span className="ld">
+      <span className="ld-d"/>
+      <span className="ld-d"/>
+      <span className="ld-d"/>
+    </span>
   );
 }
 
@@ -381,6 +395,7 @@ export default function App() {
   const [step, setStep]           = useState("upload");
   const [loading, setLoading]     = useState(false);
   const [loadMsg, setLoadMsg]     = useState("");
+  const [loadPct, setLoadPct]     = useState(0);
   const [error, setError]         = useState("");
   const [dragOver, setDragOver]   = useState(false);
   const [title, setTitle]         = useState("");
@@ -390,6 +405,7 @@ export default function App() {
   const [flowEdges, setFlowEdges] = useState([]);
   const [dlError, setDlError]     = useState("");
   const [dlBusy, setDlBusy]       = useState("");
+  const [revealed, setRevealed]   = useState(false);
 
   const fileRef      = useRef();
   const cameraRef    = useRef();
@@ -397,6 +413,11 @@ export default function App() {
   const flowCardRef  = useRef();
 
   const BACKEND_URL = "https://inkparse-backend.onrender.com";
+
+  useEffect(() => {
+    const t = setTimeout(() => setRevealed(true), 80);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleFile = file => {
     if (!file||!file.type.startsWith("image/")) return;
@@ -410,26 +431,37 @@ export default function App() {
 
   const analyze = async () => {
     if (!imageB64) return;
-    setLoading(true); setError(""); setDlError("");
-    setLoadMsg("Sending to Scrivly…");
+    setLoading(true); setError(""); setDlError(""); setLoadPct(0);
+    const msgs = [
+      [0, "Transmitting image…"],
+      [20, "Interpreting handwriting…"],
+      [55, "Structuring content…"],
+      [78, "Generating flow diagram…"],
+      [92, "Finalising output…"],
+    ];
+    let mi = 0;
+    const tick = setInterval(() => {
+      if (mi < msgs.length) { setLoadMsg(msgs[mi][1]); setLoadPct(msgs[mi][0]); mi++; }
+    }, 900);
     try {
       const res = await fetch(`${BACKEND_URL}/api/analyze`, {
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({imageBase64:imageB64,imageMime})
       });
-      setLoadMsg("Reading your handwriting…");
+      clearInterval(tick); setLoadPct(96); setLoadMsg("Processing response…");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error||`Error ${res.status}`);
       setTitle(data.title||"Notes");
       setNotes(data.notes||"");
-      setLoadMsg("Building diagram…");
       const code=(data.mermaidCode||"flowchart TD\n  A([Start]) --> B[Content]").replace(/```[\w]*\n?/g,"").trim();
       const {nodes:n,edges:e}=parseMermaidToGraph(code);
       setFlowNodes(n); setFlowEdges(e);
-      setStep("result");
+      setLoadPct(100);
+      setTimeout(() => setStep("result"), 300);
     } catch(e) {
+      clearInterval(tick);
       setError(e.message.includes("fetch")||e.message.includes("Failed")
-        ? "Cannot reach backend. Make sure inkparse-server.js is running."
+        ? "Unable to reach the server. Please ensure the backend service is running."
         : e.message);
     }
     finally { setLoading(false); }
@@ -452,9 +484,9 @@ export default function App() {
     setDlBusy("notes-jpg"); setDlError("");
     try {
       await loadH2C();
-      const canvas=await window.html2canvas(notesCardRef.current,{scale:2,backgroundColor:"#f5f0e8",useCORS:true,logging:false});
+      const canvas=await window.html2canvas(notesCardRef.current,{scale:2,backgroundColor:"#f0ead8",useCORS:true,logging:false});
       triggerDownload(canvas.toDataURL("image/jpeg",0.95),`${title||"notes"}.jpg`);
-    } catch(e){setDlError("JPG failed: "+e.message);}
+    } catch(e){setDlError("JPG export failed: "+e.message);}
     finally{setDlBusy("");}
   };
 
@@ -465,7 +497,7 @@ export default function App() {
       const url=URL.createObjectURL(blob);
       triggerDownload(url,`${title||"notes"}.docx`);
       setTimeout(()=>URL.revokeObjectURL(url),2000);
-    } catch(e){setDlError("DOCX failed: "+e.message);}
+    } catch(e){setDlError("DOCX export failed: "+e.message);}
     finally{setDlBusy("");}
   };
 
@@ -474,10 +506,10 @@ export default function App() {
     try {
       await loadH2C();
       const svgEl=flowCardRef.current?.querySelector("svg");
-      if(!svgEl)throw new Error("No diagram");
-      const canvas=await window.html2canvas(svgEl,{scale:2,backgroundColor:"#faf7f2",useCORS:true,logging:false});
+      if(!svgEl)throw new Error("Diagram not found");
+      const canvas=await window.html2canvas(svgEl,{scale:2,backgroundColor:"#f5f0e5",useCORS:true,logging:false});
       triggerDownload(canvas.toDataURL("image/jpeg",0.95),`${title||"diagram"}.jpg`);
-    } catch(e){setDlError("JPG failed: "+e.message);}
+    } catch(e){setDlError("JPG export failed: "+e.message);}
     finally{setDlBusy("");}
   };
 
@@ -485,403 +517,738 @@ export default function App() {
     setDlError("");
     try {
       const svgEl=flowCardRef.current?.querySelector("svg");
-      if(!svgEl)throw new Error("No diagram");
+      if(!svgEl)throw new Error("Diagram not found");
       const clone=svgEl.cloneNode(true);
       clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
-      clone.setAttribute("style","background:#faf7f2");
+      clone.setAttribute("style","background:#f5f0e5");
       const blob=new Blob([clone.outerHTML],{type:"image/svg+xml"});
       const url=URL.createObjectURL(blob);
       triggerDownload(url,`${title||"diagram"}.svg`);
       setTimeout(()=>URL.revokeObjectURL(url),2000);
-    } catch(e){setDlError("SVG failed: "+e.message);}
+    } catch(e){setDlError("SVG export failed: "+e.message);}
   };
 
   const reset = () => {
     setImage(null);setImageB64(null);setStep("upload");
     setNotes("");setFlowNodes({});setFlowEdges([]);
-    setError("");setDlError("");setTitle("");
+    setError("");setDlError("");setTitle("");setLoadPct(0);
   };
+
+  const currentYear = new Date().getFullYear();
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@300;400;500&display=swap');
+
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        html{scroll-behavior:smooth}
+        html{scroll-behavior:smooth;font-size:16px}
 
         :root{
-          --bg:#f5f0e8;
-          --bg2:#faf7f2;
-          --surface:#fff9f0;
-          --border:#d4c9b0;
-          --border2:#e8dfd0;
-          --ink:#2c1810;
-          --ink2:#5c4a35;
-          --ink3:#8b7355;
-          --accent:#8b5e3c;
-          --accent2:#a0724e;
-          --muted:#c4b8a0;
-          --red:#8b3a2a;
+          /* Parchment palette */
+          --parch-0:#faf5ec;
+          --parch-1:#f5edd8;
+          --parch-2:#ede0c4;
+          --parch-3:#d8c9a8;
+          /* Ink */
+          --ink-0:#1a0e06;
+          --ink-1:#2e1a0a;
+          --ink-2:#5a3a18;
+          --ink-3:#8a6840;
+          --ink-4:#b09060;
+          /* Accent */
+          --acc:#6b3c18;
+          --acc-h:#7a4a24;
+          --acc-l:rgba(107,60,24,0.12);
+          /* Utility */
+          --bd:#d0bfa0;
+          --bd-l:#e8ddc8;
+          --red:#7a2010;
+          --blue:#1e3a6a;
+          --green:#1a4428;
+          /* Layout */
+          --r:10px;
+          --r-lg:16px;
+          --shadow:0 4px 28px rgba(26,14,6,0.08),0 1px 4px rgba(26,14,6,0.04);
+          --shadow-lg:0 12px 48px rgba(26,14,6,0.12),0 2px 8px rgba(26,14,6,0.06);
         }
 
-        body{background:var(--bg);color:var(--ink);font-family:'Lora',serif;-webkit-font-smoothing:antialiased}
+        body{
+          background:var(--parch-0);
+          color:var(--ink-1);
+          font-family:'EB Garamond',serif;
+          -webkit-font-smoothing:antialiased;
+          min-height:100vh;
+        }
 
-        /* paper texture overlay */
-        body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-          background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23f5f0e8'/%3E%3Ccircle cx='1' cy='1' r='0.5' fill='%23c4b8a0' opacity='0.3'/%3E%3C/svg%3E");
-          opacity:0.6}
+        /* Subtle paper grain overlay */
+        body::before{
+          content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+          background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+          opacity:1;
+        }
+
+        /* Horizontal rule accent used throughout */
+        .hr-accent{width:40px;height:1.5px;background:var(--acc);display:block;margin:0 auto}
 
         .app{min-height:100vh;position:relative;z-index:1}
-        .wrap{width:100%;padding:40px 48px 100px}
+        .wrap{
+          width:100%;max-width:1280px;margin:0 auto;
+          padding:40px 56px 100px;
+        }
+
+        /* ── PAGE REVEAL ── */
+        .reveal{opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s ease}
+        .reveal.in{opacity:1;transform:none}
 
         /* ── HEADER ── */
-        .hdr{margin-bottom:44px;border-bottom:1px solid var(--border2);padding-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
-        .hdr-brand{display:flex;align-items:center;gap:14px}
-        .hdr-icon{font-size:28px}
-        .brand-name{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--ink);letter-spacing:-0.5px}
-        .brand-name em{font-style:italic;color:var(--accent)}
-        .hdr-tagline{font-family:'Lora',serif;font-size:12px;color:var(--ink3);font-style:italic}
-        .hdr-right{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted)}
+        .hdr{
+          display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
+          margin-bottom:52px;padding-bottom:24px;
+          border-bottom:1px solid var(--bd-l);
+        }
+        .hdr-brand{display:flex;align-items:center;gap:16px}
+        .hdr-emblem{
+          width:42px;height:42px;border-radius:50%;
+          border:1.5px solid var(--bd);
+          display:flex;align-items:center;justify-content:center;
+          background:var(--parch-1);
+          font-size:18px;
+          box-shadow:0 2px 8px rgba(26,14,6,0.1);
+          flex-shrink:0;
+        }
+        .brand-name{
+          font-family:'Cormorant Garamond',serif;
+          font-size:26px;font-weight:700;
+          color:var(--ink-0);letter-spacing:-0.3px;
+          line-height:1.1;
+        }
+        .brand-name em{font-style:italic;color:var(--acc)}
+        .brand-sub{
+          font-family:'DM Mono',monospace;
+          font-size:9px;letter-spacing:3px;text-transform:uppercase;
+          color:var(--ink-4);margin-top:2px;
+        }
+        .hdr-meta{
+          font-family:'DM Mono',monospace;font-size:9px;
+          letter-spacing:2.5px;text-transform:uppercase;color:var(--ink-4);
+          text-align:right;
+        }
+        .hdr-meta span{display:block;margin-top:3px;font-size:8px;color:var(--bd)}
 
-        /* ── PAGE TITLE ── */
-        .page-title{margin-bottom:36px}
-        .eyebrow{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--ink3);margin-bottom:14px;display:flex;align-items:center;gap:10px}
-        .eyebrow::before{content:'';width:20px;height:1px;background:var(--ink3)}
-        h1{font-family:'Playfair Display',serif;font-size:clamp(38px,5vw,64px);font-weight:700;line-height:1.05;color:var(--ink)}
-        h1 em{font-style:italic;color:var(--accent);font-weight:400}
+        /* ── EYEBROW + H1 ── */
+        .eyebrow{
+          font-family:'DM Mono',monospace;font-size:9px;letter-spacing:4px;
+          text-transform:uppercase;color:var(--ink-3);
+          display:flex;align-items:center;gap:12px;margin-bottom:16px;
+        }
+        .eyebrow::before{content:'';width:24px;height:1px;background:var(--bd)}
 
-        /* ── DROP ZONE ── */
-        .drop{border:1.5px dashed var(--border);background:var(--surface);border-radius:14px;padding:72px 40px;text-align:center;cursor:pointer;transition:all .3s;position:relative}
-        .drop:hover,.drop.over{border-color:var(--accent);background:#fdf8f0;transform:translateY(-2px);box-shadow:0 8px 32px rgba(139,94,60,0.08)}
-        .drop-icon{font-size:48px;display:block;margin-bottom:18px}
-        .drop-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--ink);margin-bottom:8px;font-style:italic}
-        .drop-sub{color:var(--ink3);font-size:13px;font-family:'Lora',serif;font-style:italic}
-
-        .img-prev{border-radius:12px;overflow:hidden;border:1px solid var(--border);margin-bottom:18px;position:relative;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
-        .img-prev img{width:100%;max-height:300px;object-fit:contain;background:var(--surface);display:block}
-        .img-badge{position:absolute;top:12px;left:12px;background:var(--ink);color:var(--bg);font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;padding:4px 12px;border-radius:100px;text-transform:uppercase}
+        h1{
+          font-family:'Cormorant Garamond',serif;
+          font-size:clamp(40px,5.5vw,68px);
+          font-weight:700;line-height:1.03;color:var(--ink-0);
+          letter-spacing:-1px;
+        }
+        h1 em{font-style:italic;color:var(--acc);font-weight:600}
 
         /* ── BUTTONS ── */
-        .btn{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:500;border:none;cursor:pointer;border-radius:8px;display:inline-flex;align-items:center;gap:8px;transition:all .2s;padding:11px 20px;white-space:nowrap}
-        .btn:disabled{opacity:.4;cursor:not-allowed}
-        .btn-main{background:var(--ink);color:var(--bg);width:100%;justify-content:center;padding:16px;border-radius:10px;font-size:11px;letter-spacing:2.5px;box-shadow:0 4px 20px rgba(44,24,16,0.2)}
-        .btn-main:hover:not(:disabled){background:#3d2015;transform:translateY(-1px);box-shadow:0 8px 28px rgba(44,24,16,0.25)}
-        .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--ink2)}
-        .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
-        .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+        .btn{
+          font-family:'DM Mono',monospace;font-size:10px;
+          letter-spacing:2px;text-transform:uppercase;font-weight:500;
+          border:none;cursor:pointer;border-radius:var(--r);
+          display:inline-flex;align-items:center;gap:8px;
+          transition:all .2s;padding:11px 20px;white-space:nowrap;
+        }
+        .btn:disabled{opacity:.38;cursor:not-allowed}
+
+        .btn-primary{
+          background:var(--ink-0);color:var(--parch-0);
+          width:100%;justify-content:center;
+          padding:17px;border-radius:var(--r);
+          font-size:11px;letter-spacing:3px;
+          box-shadow:0 4px 20px rgba(26,14,6,0.22);
+          position:relative;overflow:hidden;
+        }
+        .btn-primary::after{
+          content:'';position:absolute;inset:0;
+          background:linear-gradient(135deg,rgba(255,255,255,0.05),transparent);
+          pointer-events:none;
+        }
+        .btn-primary:hover:not(:disabled){
+          background:var(--ink-1);
+          transform:translateY(-2px);
+          box-shadow:0 8px 32px rgba(26,14,6,0.28);
+        }
+        .btn-primary:active:not(:disabled){transform:translateY(0)}
+
+        .btn-ghost{
+          background:transparent;
+          border:1px solid var(--bd);
+          color:var(--ink-2);
+          padding:9px 18px;
+        }
+        .btn-ghost:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-l)}
+
+        .btn-danger{
+          background:transparent;border:1px solid rgba(122,32,16,0.25);
+          color:var(--red);padding:9px 16px;
+        }
+        .btn-danger:hover{background:rgba(122,32,16,0.06)}
+
+        /* ── DROP ZONE ── */
+        .drop{
+          border:1.5px dashed var(--bd);
+          background:var(--parch-1);
+          border-radius:var(--r-lg);
+          padding:72px 40px;
+          text-align:center;
+          cursor:pointer;
+          transition:all .3s;
+          position:relative;
+          min-height:300px;
+          display:flex;flex-direction:column;align-items:center;justify-content:center;
+        }
+        .drop:hover,.drop.over{
+          border-color:var(--acc);
+          background:#f8f0e0;
+          transform:translateY(-3px);
+          box-shadow:var(--shadow-lg);
+        }
+        .drop-icon{
+          font-size:44px;margin-bottom:20px;
+          filter:drop-shadow(0 2px 4px rgba(26,14,6,0.15));
+        }
+        .drop-title{
+          font-family:'Cormorant Garamond',serif;
+          font-size:22px;font-weight:600;font-style:italic;
+          color:var(--ink-1);margin-bottom:8px;
+        }
+        .drop-sub{
+          font-family:'EB Garamond',serif;
+          font-size:14px;font-style:italic;color:var(--ink-3);
+        }
+        .drop-hint{
+          margin-top:20px;
+          font-family:'DM Mono',monospace;
+          font-size:8px;letter-spacing:2px;text-transform:uppercase;
+          color:var(--bd);
+        }
+
+        /* ── IMAGE PREVIEW ── */
+        .img-prev{
+          border-radius:var(--r-lg);overflow:hidden;
+          border:1px solid var(--bd-l);margin-bottom:16px;
+          position:relative;box-shadow:var(--shadow);
+        }
+        .img-prev img{width:100%;max-height:280px;object-fit:contain;background:var(--parch-1);display:block}
+        .img-badge{
+          position:absolute;top:12px;left:12px;
+          background:var(--ink-0);color:var(--parch-0);
+          font-family:'DM Mono',monospace;font-size:8px;
+          letter-spacing:2px;padding:4px 12px;border-radius:100px;
+          text-transform:uppercase;
+        }
+
+        /* ── UPLOAD LAYOUT ── */
+        .upload-layout{
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:80px;align-items:center;
+          min-height:72vh;padding:16px 0;
+        }
+        .upload-left{display:flex;flex-direction:column}
+        .upload-left h1{margin-bottom:24px}
+        .hero-desc{
+          font-family:'EB Garamond',serif;
+          font-size:16px;line-height:1.9;
+          color:var(--ink-2);margin-bottom:40px;
+          max-width:420px;
+        }
+        .hero-features{display:flex;flex-direction:column;gap:0}
+        .feat{
+          font-family:'DM Mono',monospace;font-size:9px;
+          letter-spacing:2.5px;text-transform:uppercase;color:var(--ink-3);
+          display:flex;align-items:center;gap:12px;
+          padding:10px 0;
+          border-bottom:1px solid var(--bd-l);
+        }
+        .feat:first-child{border-top:1px solid var(--bd-l)}
+        .feat-dot{width:6px;height:6px;border-radius:50%;background:var(--acc);flex-shrink:0}
+
+        /* ── UPLOAD OPTION BUTTONS ── */
+        .upload-btns{display:flex;align-items:stretch;gap:12px;margin-top:16px}
+        .upload-opt{
+          flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;
+          padding:18px 14px;
+          border:1.5px solid var(--bd-l);border-radius:var(--r);
+          background:var(--parch-0);cursor:pointer;
+          transition:all .2s;text-align:center;
+        }
+        .upload-opt:hover{
+          border-color:var(--acc);
+          background:var(--parch-1);
+          transform:translateY(-2px);
+          box-shadow:0 6px 20px rgba(107,60,24,0.1);
+        }
+        .upload-opt-icon{font-size:24px;line-height:1}
+        .upload-opt-label{
+          font-family:'DM Mono',monospace;font-size:9px;
+          letter-spacing:2px;text-transform:uppercase;
+          color:var(--ink-1);font-weight:500;
+        }
+        .upload-opt-sub{
+          font-family:'EB Garamond',serif;
+          font-size:12px;color:var(--ink-3);font-style:italic;
+        }
+        .upload-or{
+          font-family:'EB Garamond',serif;
+          font-size:13px;color:var(--ink-4);font-style:italic;
+          display:flex;align-items:center;padding:0 4px;align-self:center;
+        }
 
         /* ── LOADING ── */
-        .loading-wrap{text-align:center;padding:64px 20px}
-        .spin{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border2);border-top-color:var(--accent);animation:spin .9s linear infinite;margin:0 auto 18px}
+        .loading-wrap{text-align:center;padding:52px 24px}
+        .loading-spinner{
+          width:44px;height:44px;margin:0 auto 20px;
+          border-radius:50%;
+          border:1.5px solid var(--bd-l);
+          border-top-color:var(--acc);
+          animation:spin .9s linear infinite;
+        }
         @keyframes spin{to{transform:rotate(360deg)}}
-        .loading-wrap p{font-family:'Lora',serif;font-size:13px;font-style:italic;color:var(--ink3);animation:fade 2s ease infinite}
-        @keyframes fade{0%,100%{opacity:.3}50%{opacity:1}}
-        .err{background:rgba(139,58,42,0.06);border:1px solid rgba(139,58,42,0.2);border-radius:8px;padding:12px 16px;color:var(--red);font-size:12px;margin-top:14px;font-family:'DM Mono',monospace;white-space:pre-wrap}
+        .loading-msg{
+          font-family:'EB Garamond',serif;
+          font-size:15px;font-style:italic;
+          color:var(--ink-2);margin-bottom:16px;
+        }
+        .progress-track{
+          width:200px;margin:0 auto;height:2px;
+          background:var(--bd-l);border-radius:2px;overflow:hidden;
+        }
+        .progress-fill{
+          height:100%;background:var(--acc);
+          border-radius:2px;
+          transition:width .6s ease;
+        }
 
-        /* ── RESULT LAYOUT ── */
-        .result-wrap{display:flex;flex-direction:column;gap:0}
+        /* Loading dots */
+        .ld{display:inline-flex;gap:4px;align-items:center;vertical-align:middle}
+        .ld-d{
+          width:4px;height:4px;border-radius:50%;
+          background:var(--parch-0);
+          animation:ldpulse 1.2s ease infinite;
+        }
+        .ld-d:nth-child(2){animation-delay:.2s}
+        .ld-d:nth-child(3){animation-delay:.4s}
+        @keyframes ldpulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
 
-        /* sticky top bar */
-        .res-topbar{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border2);padding:14px 48px;margin:0 -48px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;backdrop-filter:blur(8px);background:rgba(245,240,232,0.95)}
-        .res-topbar-left{}
-        .res-eyebrow{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
-        .res-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--ink);font-style:italic;line-height:1.1}
+        /* ── ERROR ── */
+        .err-box{
+          background:rgba(122,32,16,0.05);
+          border:1px solid rgba(122,32,16,0.18);
+          border-radius:var(--r);
+          padding:12px 16px;color:var(--red);
+          font-size:13px;margin-top:14px;
+          font-family:'DM Mono',monospace;
+          line-height:1.6;
+        }
+        .err-box::before{content:'⚠  ';opacity:.7}
 
-        /* full width sections */
-        .result-section{background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow:hidden;margin-bottom:0;box-shadow:0 4px 24px rgba(44,24,16,0.06)}
-        .section-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 24px;background:var(--bg2);border-bottom:1px solid var(--border2)}
-        .section-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3)}
+        /* ── RESULT ── */
+        /* Sticky topbar */
+        .res-topbar{
+          position:sticky;top:0;z-index:50;
+          background:rgba(250,245,236,0.96);
+          backdrop-filter:blur(10px);
+          -webkit-backdrop-filter:blur(10px);
+          border-bottom:1px solid var(--bd-l);
+          padding:14px 56px;margin:0 -56px 36px;
+          display:flex;align-items:center;
+          justify-content:space-between;flex-wrap:wrap;gap:12px;
+        }
+        .res-eyebrow{
+          font-family:'DM Mono',monospace;font-size:8px;
+          letter-spacing:3px;text-transform:uppercase;
+          color:var(--ink-4);margin-bottom:4px;
+        }
+        .res-title{
+          font-family:'Cormorant Garamond',serif;
+          font-size:26px;font-weight:700;font-style:italic;
+          color:var(--ink-0);line-height:1.1;
+        }
+
+        /* Section card */
+        .result-section{
+          background:var(--parch-0);
+          border:1px solid var(--bd-l);
+          border-radius:var(--r-lg);
+          overflow:hidden;
+          margin-bottom:0;
+          box-shadow:var(--shadow);
+        }
+        .section-hdr{
+          display:flex;align-items:center;
+          justify-content:space-between;flex-wrap:wrap;gap:12px;
+          padding:14px 28px;
+          background:var(--parch-1);
+          border-bottom:1px solid var(--bd-l);
+        }
+        .section-label{
+          font-family:'DM Mono',monospace;font-size:9px;
+          letter-spacing:3px;text-transform:uppercase;color:var(--ink-3);
+          display:flex;align-items:center;gap:10px;
+        }
+        .section-label::before{
+          content:'';width:16px;height:1px;background:var(--acc);
+        }
         .section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-        .interactive-badge{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
-        .section-body{width:100%}
+
+        /* Notes area */
+        .notes-ta-full{
+          width:100%;min-height:60vh;
+          background:transparent;border:none;outline:none;
+          padding:36px 52px;
+          color:var(--ink-2);
+          font-family:'DM Mono',monospace;font-size:13px;
+          line-height:1.9;resize:vertical;
+        }
+        .notes-prev-full{
+          padding:36px 52px;min-height:50vh;
+        }
+
+        /* Rendered notes styles */
+        .nc h1{
+          font-family:'Cormorant Garamond',serif;
+          font-size:24px;font-weight:700;font-style:italic;
+          color:var(--ink-0);margin:0 0 20px;
+          padding-bottom:14px;
+          border-bottom:1px solid var(--bd-l);
+        }
+        .nc h2{
+          font-family:'Cormorant Garamond',serif;
+          font-size:19px;font-weight:600;font-style:italic;
+          color:var(--ink-1);margin:28px 0 10px;
+        }
+        .nc h3{
+          font-family:'DM Mono',monospace;font-size:9px;
+          font-weight:500;color:var(--ink-3);
+          margin:20px 0 8px;text-transform:uppercase;letter-spacing:3px;
+        }
+        .nc p{
+          font-size:15px;line-height:1.95;color:var(--ink-2);
+          margin-bottom:14px;font-family:'EB Garamond',serif;
+        }
+        .nc ul{list-style:none;padding:0;margin:8px 0 16px}
+        .nc ol{padding-left:22px;margin:8px 0 16px}
+        .nc li{
+          font-size:14.5px;line-height:1.85;color:var(--ink-2);
+          padding:3px 0 3px 22px;position:relative;
+          font-family:'EB Garamond',serif;
+        }
+        .nc ul li::before{
+          content:'·';position:absolute;left:4px;
+          color:var(--acc);font-size:18px;line-height:1.1;
+        }
+        .nc ol li{padding-left:0;list-style:decimal}
+        .nc ol li::before{display:none}
+        .nc strong{color:var(--ink-0);font-weight:700}
+        .nc em{color:var(--acc-h);font-style:italic}
+        .nc code{
+          background:rgba(107,60,24,0.07);color:var(--acc);
+          padding:2px 7px;border-radius:4px;
+          font-family:'DM Mono',monospace;font-size:11.5px;
+        }
+        .nc hr{border:none;border-top:1px solid var(--bd-l);margin:22px 0}
+
+        /* Toggle */
+        .toggle-group{
+          display:flex;gap:2px;
+          background:var(--bd-l);
+          border-radius:7px;padding:2px;
+        }
+        .toggle-btn{
+          font-family:'DM Mono',monospace;font-size:8px;
+          letter-spacing:1px;text-transform:uppercase;
+          padding:5px 12px;border:none;border-radius:5px;
+          cursor:pointer;background:transparent;color:var(--ink-3);
+          transition:all .15s;
+        }
+        .toggle-btn.active{background:var(--ink-0);color:var(--parch-0)}
+
+        /* Download buttons */
+        .dl-btn{
+          font-family:'DM Mono',monospace;font-size:8px;
+          letter-spacing:1.5px;text-transform:uppercase;font-weight:400;
+          border:none;cursor:pointer;border-radius:6px;
+          display:inline-flex;align-items:center;gap:6px;
+          padding:7px 13px;transition:all .2s;
+        }
+        .dl-btn:disabled{opacity:.35;cursor:not-allowed}
+        .dl-jpg{background:rgba(107,60,24,0.07);border:1px solid rgba(107,60,24,0.18);color:var(--acc)}
+        .dl-jpg:hover:not(:disabled){background:rgba(107,60,24,0.12)}
+        .dl-doc{background:rgba(30,58,106,0.06);border:1px solid rgba(30,58,106,0.15);color:var(--blue)}
+        .dl-doc:hover:not(:disabled){background:rgba(30,58,106,0.1)}
+        .dl-svg{background:rgba(26,68,40,0.06);border:1px solid rgba(26,68,40,0.15);color:var(--green)}
+        .dl-svg:hover:not(:disabled){background:rgba(26,68,40,0.1)}
+
+        /* Section divider */
+        .section-divider{
+          display:flex;align-items:center;gap:16px;
+          padding:32px 0;color:var(--bd);
+        }
+        .divider-line{flex:1;height:1px;background:var(--bd-l)}
+        .divider-label{
+          font-family:'DM Mono',monospace;font-size:8px;
+          letter-spacing:4px;text-transform:uppercase;
+          color:var(--ink-3);white-space:nowrap;
+        }
+        .divider-ornament{
+          font-size:14px;color:var(--bd);
+          font-family:'Cormorant Garamond',serif;
+        }
+
+        /* ── FLOW EDITOR ── */
         .diagram-body{min-height:80vh;display:flex;flex-direction:column}
         .diagram-body > div{flex:1;min-height:80vh}
 
-        /* notes full width */
-        .notes-ta-full{width:100%;min-height:60vh;background:transparent;border:none;outline:none;padding:32px 48px;color:var(--ink2);font-family:'DM Mono',monospace;font-size:13px;line-height:1.85;resize:vertical}
-        .notes-prev-full{padding:32px 48px;min-height:50vh}
-
-        .nc h1{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--ink);margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid var(--border2);font-style:italic}
-        .nc h2{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;color:var(--ink2);margin:24px 0 10px;font-style:italic}
-        .nc h3{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;color:var(--ink3);margin:16px 0 8px;text-transform:uppercase;letter-spacing:2px}
-        .nc p{font-size:14px;line-height:1.9;color:var(--ink2);margin-bottom:12px;font-family:'Lora',serif}
-        .nc ul{list-style:none;padding:0;margin:8px 0 14px}
-        .nc ol{padding-left:20px;margin:8px 0 14px}
-        .nc li{font-size:13.5px;line-height:1.8;color:var(--ink2);padding:3px 0 3px 20px;position:relative;font-family:'Lora',serif}
-        .nc ul li::before{content:'✦';position:absolute;left:0;color:var(--accent);font-size:7px;top:9px}
-        .nc ol li{padding-left:0;list-style:decimal}
-        .nc ol li::before{display:none}
-        .nc strong{color:var(--ink);font-weight:700}
-        .nc em{color:var(--accent2);font-style:italic}
-        .nc code{background:rgba(139,94,60,0.08);color:var(--accent);padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;font-size:11px}
-        .nc hr{border:none;border-top:1px solid var(--border2);margin:20px 0}
-
-        /* section divider */
-        .section-divider{display:flex;align-items:center;gap:14px;padding:28px 0;color:var(--muted)}
-        .divider-line{flex:1;height:1px;background:var(--border2)}
-        .divider-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3);white-space:nowrap}
-
-        /* ── TWO COL ── */
-        .two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:16px;align-items:stretch}
-        @media(max-width:760px){.two-col{grid-template-columns:1fr}}
-
-        /* ── CARD ── */
-        .card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 4px 24px rgba(44,24,16,0.07);height:100%}
-        .card-head{background:var(--bg2);border-bottom:1px solid var(--border2);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-        .card-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3)}
-        .toggle-group{display:flex;gap:2px;background:var(--border2);border-radius:6px;padding:2px}
-        .toggle-btn{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border:none;border-radius:4px;cursor:pointer;background:transparent;color:var(--ink3);transition:all .15s}
-        .toggle-btn.active{background:var(--ink);color:var(--bg)}
-
-        /* ── NOTES ── */
-        .notes-ta{width:100%;min-height:560px;background:transparent;border:none;outline:none;padding:24px;color:var(--ink2);font-family:'DM Mono',monospace;font-size:12px;line-height:1.8;resize:vertical;flex:1}
-        .notes-prev{padding:28px 32px;min-height:560px;overflow:auto;flex:1}
-
-        .nc h1{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--ink);margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border2);font-style:italic}
-        .nc h2{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--ink2);margin:20px 0 8px;font-style:italic}
-        .nc h3{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;color:var(--ink3);margin:14px 0 6px;text-transform:uppercase;letter-spacing:2px}
-        .nc p{font-size:13.5px;line-height:1.85;color:var(--ink2);margin-bottom:10px;font-family:'Lora',serif}
-        .nc ul{list-style:none;padding:0;margin:6px 0 12px}
-        .nc ol{padding-left:20px;margin:6px 0 12px}
-        .nc li{font-size:13px;line-height:1.8;color:var(--ink2);padding:2px 0 2px 18px;position:relative;font-family:'Lora',serif}
-        .nc ul li::before{content:'✦';position:absolute;left:0;color:var(--accent);font-size:7px;top:8px}
-        .nc ol li{padding-left:0;list-style:decimal}
-        .nc ol li::before{display:none}
-        .nc strong{color:var(--ink);font-weight:700}
-        .nc em{color:var(--accent2);font-style:italic}
-        .nc code{background:rgba(139,94,60,0.08);color:var(--accent);padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;font-size:11px}
-        .nc hr{border:none;border-top:1px solid var(--border2);margin:16px 0}
-
-        /* ── DOWNLOAD STRIP ── */
-        .dl-strip{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;background:var(--bg2);border-top:1px solid var(--border2);flex-shrink:0}
-        .dl-btn{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;font-weight:500;border:none;cursor:pointer;border-radius:6px;display:inline-flex;align-items:center;gap:5px;padding:7px 12px;transition:all .2s}
-        .dl-btn:disabled{opacity:.4;cursor:not-allowed}
-        .dl-jpg{background:rgba(139,94,60,0.08);border:1px solid rgba(139,94,60,0.2);color:var(--accent)}
-        .dl-jpg:hover:not(:disabled){background:rgba(139,94,60,0.14)}
-        .dl-doc{background:rgba(74,90,138,0.08);border:1px solid rgba(74,90,138,0.2);color:#4a5a8a}
-        .dl-doc:hover:not(:disabled){background:rgba(74,90,138,0.14)}
-        .dl-svg{background:rgba(90,122,58,0.08);border:1px solid rgba(90,122,58,0.2);color:#5a7a3a}
-        .dl-svg:hover:not(:disabled){background:rgba(90,122,58,0.14)}
-
-        /* ── FLOW EDITOR ── */
-        .fe-toolbar{display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--bg2);border-bottom:1px solid var(--border2);flex-shrink:0;flex-wrap:wrap;min-height:46px}
-        .fe-btn{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.5px;padding:5px 10px;border:1px solid var(--border);background:transparent;color:var(--ink2);border-radius:5px;cursor:pointer;transition:all .15s;white-space:nowrap}
-        .fe-btn:hover{background:var(--border2);border-color:var(--accent);color:var(--accent)}
-        .fe-btn-connect{border-color:rgba(74,90,138,0.3);color:#4a5a8a}
-        .fe-btn-connect:hover{background:rgba(74,90,138,0.08)}
-        .fe-btn-edit{border-color:rgba(90,122,58,0.3);color:#5a7a3a}
-        .fe-btn-edit:hover{background:rgba(90,122,58,0.08)}
-        .fe-btn-del{border-color:rgba(139,58,42,0.3);color:var(--red)}
-        .fe-btn-del:hover{background:rgba(139,58,42,0.08)}
-        .fe-sel{font-family:'DM Mono',monospace;font-size:8px;padding:5px 8px;border:1px solid var(--border);background:var(--bg);color:var(--ink);border-radius:5px;cursor:pointer}
-        .fe-zoom{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink3);min-width:28px;text-align:center}
-        .fe-hint{font-family:'Lora',serif;font-size:11px;color:var(--accent);font-style:italic;animation:fade 1.5s ease infinite}
-        .fe-hint-bar{font-family:'Lora',serif;font-size:10px;color:var(--muted);font-style:italic;text-align:center;padding:6px;flex-shrink:0}
+        .fe-toolbar{
+          display:flex;align-items:center;gap:6px;
+          padding:10px 18px;
+          background:var(--parch-1);
+          border-bottom:1px solid var(--bd-l);
+          flex-shrink:0;flex-wrap:wrap;min-height:48px;
+        }
+        .fe-btn{
+          font-family:'DM Mono',monospace;font-size:8px;
+          letter-spacing:.5px;text-transform:uppercase;
+          padding:6px 11px;
+          border:1px solid var(--bd-l);
+          background:var(--parch-0);color:var(--ink-2);
+          border-radius:5px;cursor:pointer;transition:all .15s;white-space:nowrap;
+        }
+        .fe-btn:hover{background:var(--parch-1);border-color:var(--acc);color:var(--acc)}
+        .fe-btn-connect{border-color:rgba(30,58,106,0.2);color:var(--blue)}
+        .fe-btn-connect:hover{background:rgba(30,58,106,0.06)}
+        .fe-btn-edit{border-color:rgba(26,68,40,0.2);color:var(--green)}
+        .fe-btn-edit:hover{background:rgba(26,68,40,0.06)}
+        .fe-btn-del{border-color:rgba(122,32,16,0.2);color:var(--red)}
+        .fe-btn-del:hover{background:rgba(122,32,16,0.06)}
+        .fe-zoom-btn{padding:5px 9px}
+        .fe-sel{
+          font-family:'DM Mono',monospace;font-size:8px;
+          padding:5px 8px;border:1px solid var(--bd-l);
+          background:var(--parch-0);color:var(--ink-1);border-radius:5px;cursor:pointer;
+        }
+        .fe-zoom{
+          font-family:'DM Mono',monospace;font-size:8px;
+          color:var(--ink-4);min-width:30px;text-align:center;
+        }
+        .fe-hint{
+          font-family:'EB Garamond',serif;font-size:12px;
+          color:var(--acc);font-style:italic;
+          animation:fadepulse 1.5s ease infinite;
+        }
+        @keyframes fadepulse{0%,100%{opacity:.4}50%{opacity:1}}
+        .fe-hint-bar{
+          font-family:'EB Garamond',serif;font-size:11px;
+          color:var(--bd);font-style:italic;
+          text-align:center;padding:7px;flex-shrink:0;
+          border-top:1px solid var(--bd-l);
+        }
 
         /* ── EDIT POPUP ── */
-        .ep-overlay{position:fixed;inset:0;background:rgba(44,24,16,0.4);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
-        .ep{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:300px;box-shadow:0 24px 80px rgba(0,0,0,0.15)}
-        .ep-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px;font-style:italic}
-        .ep-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 12px;color:var(--ink);font-family:'Lora',serif;font-size:14px;outline:none;margin-bottom:12px;transition:border-color .15s}
-        .ep-input:focus{border-color:var(--accent)}
+        .ep-overlay{
+          position:fixed;inset:0;
+          background:rgba(26,14,6,0.45);
+          z-index:200;display:flex;
+          align-items:center;justify-content:center;
+          backdrop-filter:blur(4px);
+          -webkit-backdrop-filter:blur(4px);
+          animation:fadeIn .15s ease;
+        }
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        .ep{
+          background:var(--parch-0);
+          border:1px solid var(--bd);
+          border-radius:var(--r-lg);
+          padding:28px;width:320px;
+          box-shadow:var(--shadow-lg);
+          animation:slideUp .2s ease;
+        }
+        @keyframes slideUp{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+        .ep-title{
+          font-family:'Cormorant Garamond',serif;
+          font-size:17px;font-weight:600;font-style:italic;
+          color:var(--ink-0);margin-bottom:16px;
+        }
+        .ep-input{
+          width:100%;background:var(--parch-1);
+          border:1px solid var(--bd);border-radius:var(--r);
+          padding:11px 14px;color:var(--ink-0);
+          font-family:'EB Garamond',serif;font-size:15px;
+          outline:none;margin-bottom:14px;
+          transition:border-color .15s;
+        }
+        .ep-input:focus{border-color:var(--acc)}
         .ep-row{display:flex;gap:8px}
-        .ep-ok{flex:1;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:9px;border:none;border-radius:7px;cursor:pointer;background:var(--ink);color:var(--bg);font-weight:500}
-        .ep-ok:hover{background:#3d2015}
-        .ep-cancel{flex:1;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:9px;border:1px solid var(--border);border-radius:7px;cursor:pointer;background:transparent;color:var(--ink3)}
-
-        /* ── FOOTER STRIP ── */
-        .sep{height:1px;background:var(--border2);margin:24px 0}
-        .dl-err{background:rgba(139,58,42,0.06);border:1px solid rgba(139,58,42,0.15);border-radius:7px;padding:10px 14px;color:var(--red);font-size:11px;margin-top:10px;font-family:'DM Mono',monospace}
+        .ep-ok{
+          flex:1;font-family:'DM Mono',monospace;font-size:9px;
+          letter-spacing:1.5px;text-transform:uppercase;
+          padding:10px;border:none;border-radius:var(--r);
+          cursor:pointer;background:var(--ink-0);color:var(--parch-0);
+          transition:background .15s;
+        }
+        .ep-ok:hover{background:var(--ink-1)}
+        .ep-cancel{
+          flex:1;font-family:'DM Mono',monospace;font-size:9px;
+          letter-spacing:1.5px;text-transform:uppercase;
+          padding:10px;border:1px solid var(--bd);border-radius:var(--r);
+          cursor:pointer;background:transparent;color:var(--ink-3);
+          transition:border-color .15s;
+        }
+        .ep-cancel:hover{border-color:var(--acc);color:var(--acc)}
 
         /* ── FOOTER ── */
-        .footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--border2);text-align:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
-        .footer em{font-style:italic;font-family:'Lora',serif;color:var(--ink3);letter-spacing:0;font-size:11px}
+        .sep{height:1px;background:var(--bd-l);margin:32px 0 24px}
+        .dl-err{
+          background:rgba(122,32,16,0.05);border:1px solid rgba(122,32,16,0.15);
+          border-radius:var(--r);padding:10px 14px;color:var(--red);
+          font-size:12px;margin-top:10px;font-family:'DM Mono',monospace;
+        }
+        .footer{
+          margin-top:64px;padding:24px 0;
+          border-top:1px solid var(--bd-l);
+          display:flex;align-items:center;justify-content:space-between;
+          flex-wrap:wrap;gap:8px;
+        }
+        .footer-brand{
+          font-family:'Cormorant Garamond',serif;
+          font-size:15px;font-style:italic;
+          color:var(--ink-3);
+        }
+        .footer-meta{
+          font-family:'DM Mono',monospace;font-size:8px;
+          letter-spacing:2.5px;text-transform:uppercase;color:var(--bd);
+        }
 
-        /* ── UPLOAD / CAMERA BUTTONS ── */
-        .upload-btns{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
-        .upload-opt{flex:1;min-width:140px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:18px 16px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface);cursor:pointer;transition:all .2s;text-align:center}
-        .upload-opt:hover{border-color:var(--accent);background:#fdf8f0;transform:translateY(-2px);box-shadow:0 6px 20px rgba(139,94,60,0.1)}
-        .upload-opt-camera{border-color:rgba(74,90,138,0.3);background:rgba(74,90,138,0.03)}
-        .upload-opt-camera:hover{border-color:#4a5a8a;background:rgba(74,90,138,0.06);box-shadow:0 6px 20px rgba(74,90,138,0.1)}
-        .upload-opt-icon{font-size:28px;line-height:1}
-        .upload-opt-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink);font-weight:500;margin-top:4px}
-        .upload-opt-sub{font-family:'Lora',serif;font-size:11px;color:var(--ink3);font-style:italic}
-        .upload-divider{font-family:'Lora',serif;font-size:12px;color:var(--muted);font-style:italic;padding:0 4px;flex-shrink:0}
-
-        /* ── UPLOAD HERO LAYOUT ── */
-        .upload-layout{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;min-height:70vh;padding:20px 0}
-        .upload-left{display:flex;flex-direction:column;gap:0}
-        .upload-left .eyebrow{margin-bottom:18px}
-        .upload-left h1{margin-bottom:24px}
-        .hero-desc{font-family:'Lora',serif;font-size:15px;line-height:1.85;color:var(--ink2);margin-bottom:32px;font-style:italic;max-width:420px}
-        .hero-features{display:flex;flex-direction:column;gap:10px}
-        .feat{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;gap:10px}
-        .feat::after{content:'';flex:1;height:1px;background:var(--border2)}
-        .upload-right{display:flex;flex-direction:column;gap:0}
-        .upload-right .drop{min-height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center}
-
-        /* ── RESPONSIVE: TABLET (max 900px) ── */
+        /* ── RESPONSIVE: TABLET ── */
         @media(max-width:900px){
-          .wrap{padding:32px 28px 80px}
-          .res-topbar{padding:12px 28px;margin:0 -28px 24px}
-          .notes-ta-full,.notes-prev-full{padding:24px 28px}
-          .upload-layout{grid-template-columns:1fr;gap:40px;min-height:auto;padding:0}
-          .hero-desc{font-size:14px;margin-bottom:24px}
-          .upload-right .drop{min-height:240px}
-          .diagram-body,.diagram-body > div{min-height:60vh}
-          .wrap{padding:36px 20px 80px}
-          .hdr{margin-bottom:36px;padding-bottom:20px}
-          .brand-name{font-size:24px}
-          h1{font-size:clamp(32px,6vw,48px)}
-          .two-col{grid-template-columns:1fr}
-          .card{border-radius:12px}
-          .hdr-right{display:none}
-          .notes-prev,.notes-ta{min-height:320px}
-          .card[style*="minHeight"]{min-height:420px!important}
-        }
-
-        /* ── RESPONSIVE: MOBILE (max 600px) ── */
-        @media(max-width:600px){
-          .wrap{padding:16px 16px 60px}
-          .res-topbar{padding:10px 16px;margin:0 -16px 20px}
-          .res-title{font-size:18px}
-          .notes-ta-full,.notes-prev-full{padding:16px 18px;min-height:40vh}
-          .section-hdr{padding:10px 14px;flex-direction:column;align-items:flex-start;gap:8px}
-          .section-actions{width:100%;justify-content:flex-start}
-          .diagram-body,.diagram-body > div{min-height:50vh}
-          .section-divider{padding:18px 0}
-          .upload-layout{grid-template-columns:1fr;gap:28px;min-height:auto}
-          .hero-desc{font-size:13px;margin-bottom:18px}
+          .wrap{padding:32px 32px 80px}
+          .res-topbar{padding:12px 32px;margin:0 -32px 28px}
+          .upload-layout{grid-template-columns:1fr;gap:44px;min-height:auto;padding:0}
+          .hero-desc{font-size:15px;margin-bottom:28px}
           .hero-features{display:none}
-          .upload-btns{flex-direction:column;gap:8px}
-          .upload-opt{width:100%;flex-direction:row;justify-content:center;gap:12px;padding:14px 16px}
-          .upload-divider{display:none}
-          .upload-right .drop{min-height:200px}
-          .wrap{padding:20px 14px 60px}
-          .hdr{margin-bottom:24px;padding-bottom:16px;flex-direction:row;align-items:center}
-          .hdr-icon{font-size:22px}
-          .brand-name{font-size:20px}
-          .hdr-tagline{display:none}
-          h1{font-size:clamp(28px,8vw,40px)}
-          .eyebrow{font-size:8px;letter-spacing:3px;margin-bottom:10px}
-          .page-title{margin-bottom:24px}
+          .notes-ta-full,.notes-prev-full{padding:28px 32px}
+          .diagram-body,.diagram-body > div{min-height:60vh}
+          .hdr{margin-bottom:36px;padding-bottom:20px}
+          h1{font-size:clamp(34px,6vw,50px)}
+          .section-hdr{padding:12px 20px}
+        }
 
-          /* Drop zone — tighter on mobile */
-          .drop{padding:44px 24px;border-radius:12px}
-          .drop-icon{font-size:38px;margin-bottom:12px}
-          .drop-title{font-size:18px}
-          .drop-sub{font-size:12px}
-
-          /* Image preview */
-          .img-prev img{max-height:220px}
-
-          /* Main button — bigger tap target */
-          .btn-main{padding:18px;font-size:11px;border-radius:12px;margin-top:16px!important}
-          .btn{padding:12px 16px;font-size:9px}
-
-          /* Cards stacked */
-          .two-col{gap:14px}
-          .card{border-radius:10px}
-          .card-head{padding:10px 14px}
-          .card-label{font-size:7px;letter-spacing:2px}
-
-          /* Notes */
-          .notes-prev{padding:16px 18px;min-height:260px}
-          .notes-ta{padding:16px;min-height:260px;font-size:11px}
-          .nc h1{font-size:17px}
-          .nc h2{font-size:14px}
-          .nc p,.nc li{font-size:12.5px}
-
-          /* Download strip — scrollable row on mobile */
-          .dl-strip{overflow-x:auto;flex-wrap:nowrap;padding:8px 12px;gap:6px;-webkit-overflow-scrolling:touch}
-          .dl-btn{white-space:nowrap;flex-shrink:0;font-size:8px;padding:8px 12px}
-
-          /* Flow editor toolbar — scrollable */
-          .fe-toolbar{overflow-x:auto;flex-wrap:nowrap;padding:8px 12px;gap:6px;-webkit-overflow-scrolling:touch}
-          .fe-btn{flex-shrink:0;padding:7px 10px;font-size:8px}
-          .fe-hint-bar{font-size:9px;padding:5px 10px}
-
-          /* Diagram canvas — touch friendly height */
-          .card[style*="minHeight"]{min-height:340px!important}
-          svg{min-height:300px!important;touch-action:none;flex:1}
-
-          /* Result header */
-          .res-hdr{flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:18px;padding-bottom:14px}
+        /* ── RESPONSIVE: MOBILE ── */
+        @media(max-width:600px){
+          .wrap{padding:20px 18px 60px}
+          .res-topbar{padding:10px 18px;margin:0 -18px 20px}
           .res-title{font-size:20px}
-
-          /* Edit popup — full width on mobile */
-          .ep{width:calc(100vw - 40px);max-width:340px}
-
-          /* Footer */
-          .footer{margin-top:40px;font-size:8px}
-          .footer em{font-size:10px}
-
-          /* Error box */
-          .err{font-size:11px;padding:10px 12px}
-          .dl-err{font-size:10px;padding:8px 12px}
-
-          /* Loading */
-          .loading-wrap{padding:44px 16px}
+          .hdr{margin-bottom:24px;padding-bottom:16px}
+          .hdr-emblem{width:36px;height:36px;font-size:16px}
+          .brand-name{font-size:22px}
+          .brand-sub,.hdr-meta{display:none}
+          h1{font-size:clamp(30px,8.5vw,42px);letter-spacing:-0.5px}
+          .eyebrow{font-size:8px;letter-spacing:3px;margin-bottom:12px}
+          .upload-layout{gap:30px}
+          .drop{padding:48px 24px;border-radius:12px;min-height:240px}
+          .drop-icon{font-size:38px;margin-bottom:14px}
+          .drop-title{font-size:19px}
+          .drop-sub{font-size:13px}
+          .drop-hint{display:none}
+          .upload-btns{flex-direction:column;gap:8px}
+          .upload-opt{flex-direction:row;justify-content:flex-start;padding:14px 16px;gap:14px}
+          .upload-or{display:none}
+          .img-prev img{max-height:220px}
+          .btn-primary{padding:17px;font-size:10px;margin-top:16px!important;border-radius:var(--r)}
+          .notes-ta-full,.notes-prev-full{padding:20px 20px;min-height:42vh}
+          .section-hdr{padding:10px 16px;gap:8px;flex-direction:column;align-items:flex-start}
+          .section-actions{width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;gap:6px;-webkit-overflow-scrolling:touch}
+          .dl-btn{white-space:nowrap;flex-shrink:0;padding:8px 12px}
+          .section-divider{padding:20px 0}
+          .diagram-body,.diagram-body > div{min-height:50vh}
+          .fe-toolbar{overflow-x:auto;flex-wrap:nowrap;padding:8px 12px;gap:5px;-webkit-overflow-scrolling:touch}
+          .fe-btn{flex-shrink:0;padding:7px 10px}
+          .fe-hint-bar{font-size:10px;padding:6px 12px}
+          .ep{width:calc(100vw - 36px);max-width:340px;padding:22px}
+          .footer{flex-direction:column;align-items:center;text-align:center;margin-top:40px}
+          .nc h1{font-size:20px}
+          .nc h2{font-size:17px}
+          .nc p,.nc li{font-size:14px}
         }
 
-        /* ── RESPONSIVE: SMALL PHONE (max 380px) ── */
+        /* ── SMALL PHONE ── */
         @media(max-width:380px){
-          .wrap{padding:16px 12px 50px}
-          h1{font-size:26px}
-          .drop{padding:36px 16px}
-          .btn-main{font-size:10px;padding:16px}
-          .brand-name{font-size:18px}
+          .wrap{padding:16px 14px 50px}
+          h1{font-size:27px}
+          .brand-name{font-size:19px}
+          .drop{padding:36px 18px}
+          .btn-primary{font-size:10px}
         }
 
-        /* ── TOUCH: Remove hover effects on touch devices ── */
+        /* ── LARGE SCREENS ── */
+        @media(min-width:1280px){
+          .wrap{padding:52px 72px 120px}
+          .res-topbar{padding:14px 72px;margin:0 -72px 40px}
+          .notes-ta-full,.notes-prev-full{padding:40px 64px}
+        }
+
+        /* ── NO HOVER (TOUCH) ── */
         @media(hover:none){
           .drop:hover{transform:none;box-shadow:none}
-          .btn-main:hover:not(:disabled){transform:none;box-shadow:0 4px 20px rgba(44,24,16,0.2)}
-          .fe-btn:hover{background:transparent;border-color:var(--border);color:var(--ink2)}
-        }
-
-        /* ── LARGE SCREENS (min 1400px) ── */
-        @media(min-width:1400px){
-          .wrap{padding:52px 80px 120px}
-          .two-col{gap:32px}
-          .notes-prev,.notes-ta{min-height:620px}
+          .btn-primary:hover:not(:disabled){transform:none;box-shadow:0 4px 20px rgba(26,14,6,0.22)}
+          .fe-btn:hover{background:var(--parch-0);border-color:var(--bd-l);color:var(--ink-2)}
+          .upload-opt:hover{transform:none;box-shadow:none}
         }
       `}</style>
 
       <div className="app">
         <div className="wrap">
 
-          {/* HEADER */}
-          <div className="hdr">
+          {/* ── HEADER ── */}
+          <div className={`hdr reveal ${revealed?"in":""}`}>
             <div className="hdr-brand">
-              <span className="hdr-icon">✒</span>
+              <div className="hdr-emblem">✒</div>
               <div>
                 <div className="brand-name">Scri<em>vly</em></div>
-                <div className="hdr-tagline">Handwriting to structured notes</div>
+                <div className="brand-sub">Handwriting Intelligence</div>
               </div>
             </div>
-            <div className="hdr-right">Est. 2026 · AI Powered</div>
+            <div className="hdr-meta">
+              AI-Powered Document Analysis
+              <span>Est. {currentYear}</span>
+            </div>
           </div>
 
-          {/* UPLOAD */}
+          {/* ── UPLOAD STEP ── */}
           {step==="upload" && (
-            <div className="upload-layout">
-              {/* LEFT — hero text */}
+            <div className={`upload-layout reveal ${revealed?"in":""}`} style={{transitionDelay:"0.08s"}}>
+
+              {/* LEFT — hero */}
               <div className="upload-left">
-                <div className="eyebrow">Smart Notes Reader</div>
-                <h1>Your scribbles,<br/><em>perfectly structured.</em></h1>
+                <div className="eyebrow">Intelligent Notes Reader</div>
+                <h1>Your scribbles,<br /><em>precisely structured.</em></h1>
                 <p className="hero-desc">
-                  Snap a photo of any handwritten notes — messy, rotated, sketchy — and Scrivly turns them into
-                  clean structured text plus an interactive flowchart. Instantly.
+                  Photograph any handwritten notes — rushed, rotated, densely annotated —
+                  and Scrivly transforms them into clean, structured text with an interactive
+                  flow diagram. Professional results in seconds.
                 </p>
                 <div className="hero-features">
-                  <div className="feat">✦ Any handwriting style</div>
-                  <div className="feat">✦ Auto flowchart generation</div>
-                  <div className="feat">✦ Export JPG &amp; DOCX</div>
+                  <div className="feat"><span className="feat-dot"/>Recognises any handwriting style</div>
+                  <div className="feat"><span className="feat-dot"/>Automatic flowchart generation</div>
+                  <div className="feat"><span className="feat-dot"/>Export to JPG, DOCX &amp; SVG</div>
+                  <div className="feat"><span className="feat-dot"/>Fully interactive diagram editor</div>
                 </div>
               </div>
 
-              {/* RIGHT — upload box */}
+              {/* RIGHT — upload */}
               <div className="upload-right">
                 {!image ? (
                   <div>
@@ -891,23 +1258,27 @@ export default function App() {
                       onDrop={handleDrop}
                       onClick={()=>fileRef.current.click()}>
                       <span className="drop-icon">📓</span>
-                      <div className="drop-title">Drop or browse a photo</div>
-                      <div className="drop-sub" style={{marginTop:6}}>Any photo · any handwriting · any angle</div>
+                      <div className="drop-title">Drop or browse an image</div>
+                      <div className="drop-sub">Any photo · any handwriting · any angle</div>
+                      <div className="drop-hint">JPG · PNG · WEBP · HEIC</div>
                       <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])} />
                     </div>
 
-                    {/* Upload / Camera buttons */}
                     <div className="upload-btns">
                       <button className="upload-opt" onClick={()=>fileRef.current.click()}>
                         <span className="upload-opt-icon">🖼</span>
-                        <span className="upload-opt-label">Upload Photo</span>
-                        <span className="upload-opt-sub">from your device</span>
+                        <div>
+                          <div className="upload-opt-label">Upload Photo</div>
+                          <div className="upload-opt-sub">from device storage</div>
+                        </div>
                       </button>
-                      <div className="upload-divider">or</div>
-                      <button className="upload-opt upload-opt-camera" onClick={()=>cameraRef.current.click()}>
+                      <div className="upload-or">or</div>
+                      <button className="upload-opt" onClick={()=>cameraRef.current.click()}>
                         <span className="upload-opt-icon">📷</span>
-                        <span className="upload-opt-label">Take a Photo</span>
-                        <span className="upload-opt-sub">open camera now</span>
+                        <div>
+                          <div className="upload-opt-label">Take a Photo</div>
+                          <div className="upload-opt-sub">open camera</div>
+                        </div>
                       </button>
                       <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])} />
                     </div>
@@ -915,93 +1286,112 @@ export default function App() {
                 ) : (
                   <div>
                     <div className="img-prev">
-                      <span className="img-badge">Ready to read</span>
-                      <img src={image} alt="preview" />
+                      <span className="img-badge">Image ready</span>
+                      <img src={image} alt="Selected handwritten notes preview" />
                     </div>
-                    <div className="row" style={{marginBottom:14}}>
+                    <div style={{display:"flex",gap:10,marginBottom:14}}>
                       <button className="btn btn-ghost" onClick={reset}>↩ Change image</button>
                     </div>
                   </div>
                 )}
 
-                {loading
-                  ? <div className="loading-wrap"><div className="spin"/><p>{loadMsg}</p></div>
-                  : <button className="btn btn-main" style={{marginTop:20}} disabled={!image||loading} onClick={analyze}>
-                      ✦ &nbsp; Read & Structure Notes
-                    </button>
-                }
-                {error && <div className="err">⚠ {error}</div>}
+                {loading ? (
+                  <div className="loading-wrap">
+                    <div className="loading-spinner"/>
+                    <div className="loading-msg">{loadMsg || "Processing…"}</div>
+                    <div className="progress-track">
+                      <div className="progress-fill" style={{width:`${loadPct}%`}}/>
+                    </div>
+                  </div>
+                ) : (
+                  <button className="btn btn-primary" style={{marginTop:20}}
+                    disabled={!image||loading} onClick={analyze}>
+                    {loading ? <LoadingDots/> : "Analyse & Structure Notes"}
+                  </button>
+                )}
+
+                {error && <div className="err-box">{error}</div>}
               </div>
             </div>
           )}
 
-          {/* RESULT */}
+          {/* ── RESULT STEP ── */}
           {step==="result" && (
             <div className="result-wrap">
 
-              {/* Sticky top bar */}
+              {/* Sticky topbar */}
               <div className="res-topbar">
-                <div className="res-topbar-left">
+                <div>
                   <div className="res-eyebrow">Structured from handwriting</div>
                   <div className="res-title">{title}</div>
                 </div>
                 <button className="btn btn-ghost" onClick={reset}>↩ New image</button>
               </div>
 
-              {/* NOTES — full width */}
+              {/* NOTES section */}
               <section className="result-section" ref={notesCardRef}>
                 <div className="section-hdr">
-                  <div className="section-label">✦ Notes</div>
+                  <div className="section-label">Extracted Notes</div>
                   <div className="section-actions">
                     <div className="toggle-group">
                       <button className={`toggle-btn ${notesMode==="preview"?"active":""}`} onClick={()=>setNotesMode("preview")}>Preview</button>
                       <button className={`toggle-btn ${notesMode==="edit"?"active":""}`} onClick={()=>setNotesMode("edit")}>Edit</button>
                     </div>
-                    <button className="dl-btn dl-jpg" disabled={dlBusy==="notes-jpg"} onClick={dlNotesJpg}>{dlBusy==="notes-jpg"?"…":"🖼"} JPG</button>
-                    <button className="dl-btn dl-doc" disabled={dlBusy==="notes-docx"} onClick={dlNotesDocx}>{dlBusy==="notes-docx"?"…":"📄"} DOCX</button>
+                    <button className="dl-btn dl-jpg" disabled={dlBusy==="notes-jpg"} onClick={dlNotesJpg}>
+                      {dlBusy==="notes-jpg"?"Exporting…":"🖼 JPG"}
+                    </button>
+                    <button className="dl-btn dl-doc" disabled={dlBusy==="notes-docx"} onClick={dlNotesDocx}>
+                      {dlBusy==="notes-docx"?"Exporting…":"📄 DOCX"}
+                    </button>
                   </div>
                 </div>
-                <div className="section-body">
+                <div>
                   {notesMode==="edit"
-                    ? <textarea className="notes-ta-full" value={notes} onChange={e=>setNotes(e.target.value)} spellCheck={false} placeholder="Your notes…"/>
+                    ? <textarea className="notes-ta-full" value={notes} onChange={e=>setNotes(e.target.value)} spellCheck={false} placeholder="Your extracted notes will appear here…"/>
                     : <div className="notes-prev-full nc" dangerouslySetInnerHTML={{__html:mdToHtml(notes)}}/>
                   }
                 </div>
               </section>
 
-              {/* DIVIDER */}
+              {/* Section divider */}
               <div className="section-divider">
-                <span>◈</span>
+                <div className="divider-ornament">❧</div>
                 <div className="divider-line"/>
-                <span className="divider-label">Flow Diagram</span>
+                <div className="divider-label">Flow Diagram</div>
                 <div className="divider-line"/>
-                <span>◈</span>
+                <div className="divider-ornament">❧</div>
               </div>
 
-              {/* DIAGRAM — full width */}
+              {/* DIAGRAM section */}
               <section className="result-section" ref={flowCardRef}>
                 <div className="section-hdr">
-                  <div className="section-label">◈ Visual Flow Diagram</div>
+                  <div className="section-label">Visual Flow Diagram</div>
                   <div className="section-actions">
-                    <span className="interactive-badge">Interactive Editor</span>
-                    <button className="dl-btn dl-jpg" disabled={dlBusy==="diag-jpg"} onClick={dlDiagramJpg}>{dlBusy==="diag-jpg"?"…":"🖼"} JPG</button>
+                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:"8px",letterSpacing:"2px",textTransform:"uppercase",color:"var(--bd)"}}>Interactive Editor</span>
+                    <button className="dl-btn dl-jpg" disabled={dlBusy==="diag-jpg"} onClick={dlDiagramJpg}>
+                      {dlBusy==="diag-jpg"?"Exporting…":"🖼 JPG"}
+                    </button>
                     <button className="dl-btn dl-svg" onClick={dlDiagramSvg}>◈ SVG</button>
                   </div>
                 </div>
-                <div className="section-body diagram-body">
+                <div className="diagram-body">
                   <FlowEditor nodes={flowNodes} edges={flowEdges} onChange={(n,e)=>{setFlowNodes(n);setFlowEdges(e);}} />
                 </div>
               </section>
 
               {dlError && <div className="dl-err">⚠ {dlError}</div>}
+
               <div className="sep"/>
-              <button className="btn btn-ghost" onClick={reset}>✕ Start over</button>
+              <button className="btn btn-ghost" onClick={reset}>✕ Begin a new analysis</button>
             </div>
           )}
 
+          {/* ── FOOTER ── */}
           <div className="footer">
-            Scrivly · <em>Turn your handwriting into knowledge</em>
+            <div className="footer-brand">Scrivly — Turn your handwriting into knowledge</div>
+            <div className="footer-meta">AI Powered · {currentYear}</div>
           </div>
+
         </div>
       </div>
     </>
