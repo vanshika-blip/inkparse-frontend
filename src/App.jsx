@@ -578,10 +578,48 @@ export default function App() {
         @keyframes fade{0%,100%{opacity:.3}50%{opacity:1}}
         .err{background:rgba(139,58,42,0.06);border:1px solid rgba(139,58,42,0.2);border-radius:8px;padding:12px 16px;color:var(--red);font-size:12px;margin-top:14px;font-family:'DM Mono',monospace;white-space:pre-wrap}
 
-        /* ── RESULT ── */
-        .res-hdr{margin-bottom:32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-bottom:22px;border-bottom:1px solid var(--border2)}
-        .res-eyebrow{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px}
-        .res-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--ink);font-style:italic;line-height:1.1}
+        /* ── RESULT LAYOUT ── */
+        .result-wrap{display:flex;flex-direction:column;gap:0}
+
+        /* sticky top bar */
+        .res-topbar{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border2);padding:14px 48px;margin:0 -48px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;backdrop-filter:blur(8px);background:rgba(245,240,232,0.95)}
+        .res-topbar-left{}
+        .res-eyebrow{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+        .res-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--ink);font-style:italic;line-height:1.1}
+
+        /* full width sections */
+        .result-section{background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow:hidden;margin-bottom:0;box-shadow:0 4px 24px rgba(44,24,16,0.06)}
+        .section-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 24px;background:var(--bg2);border-bottom:1px solid var(--border2)}
+        .section-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3)}
+        .section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .interactive-badge{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+        .section-body{width:100%}
+        .diagram-body{min-height:80vh;display:flex;flex-direction:column}
+        .diagram-body > div{flex:1;min-height:80vh}
+
+        /* notes full width */
+        .notes-ta-full{width:100%;min-height:60vh;background:transparent;border:none;outline:none;padding:32px 48px;color:var(--ink2);font-family:'DM Mono',monospace;font-size:13px;line-height:1.85;resize:vertical}
+        .notes-prev-full{padding:32px 48px;min-height:50vh}
+
+        .nc h1{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--ink);margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid var(--border2);font-style:italic}
+        .nc h2{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;color:var(--ink2);margin:24px 0 10px;font-style:italic}
+        .nc h3{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;color:var(--ink3);margin:16px 0 8px;text-transform:uppercase;letter-spacing:2px}
+        .nc p{font-size:14px;line-height:1.9;color:var(--ink2);margin-bottom:12px;font-family:'Lora',serif}
+        .nc ul{list-style:none;padding:0;margin:8px 0 14px}
+        .nc ol{padding-left:20px;margin:8px 0 14px}
+        .nc li{font-size:13.5px;line-height:1.8;color:var(--ink2);padding:3px 0 3px 20px;position:relative;font-family:'Lora',serif}
+        .nc ul li::before{content:'✦';position:absolute;left:0;color:var(--accent);font-size:7px;top:9px}
+        .nc ol li{padding-left:0;list-style:decimal}
+        .nc ol li::before{display:none}
+        .nc strong{color:var(--ink);font-weight:700}
+        .nc em{color:var(--accent2);font-style:italic}
+        .nc code{background:rgba(139,94,60,0.08);color:var(--accent);padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;font-size:11px}
+        .nc hr{border:none;border-top:1px solid var(--border2);margin:20px 0}
+
+        /* section divider */
+        .section-divider{display:flex;align-items:center;gap:14px;padding:28px 0;color:var(--muted)}
+        .divider-line{flex:1;height:1px;background:var(--border2)}
+        .divider-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3);white-space:nowrap}
 
         /* ── TWO COL ── */
         .two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:16px;align-items:stretch}
@@ -685,9 +723,12 @@ export default function App() {
         /* ── RESPONSIVE: TABLET (max 900px) ── */
         @media(max-width:900px){
           .wrap{padding:32px 28px 80px}
+          .res-topbar{padding:12px 28px;margin:0 -28px 24px}
+          .notes-ta-full,.notes-prev-full{padding:24px 28px}
           .upload-layout{grid-template-columns:1fr;gap:40px;min-height:auto;padding:0}
           .hero-desc{font-size:14px;margin-bottom:24px}
           .upload-right .drop{min-height:240px}
+          .diagram-body,.diagram-body > div{min-height:60vh}
           .wrap{padding:36px 20px 80px}
           .hdr{margin-bottom:36px;padding-bottom:20px}
           .brand-name{font-size:24px}
@@ -702,6 +743,13 @@ export default function App() {
         /* ── RESPONSIVE: MOBILE (max 600px) ── */
         @media(max-width:600px){
           .wrap{padding:16px 16px 60px}
+          .res-topbar{padding:10px 16px;margin:0 -16px 20px}
+          .res-title{font-size:18px}
+          .notes-ta-full,.notes-prev-full{padding:16px 18px;min-height:40vh}
+          .section-hdr{padding:10px 14px;flex-direction:column;align-items:flex-start;gap:8px}
+          .section-actions{width:100%;justify-content:flex-start}
+          .diagram-body,.diagram-body > div{min-height:50vh}
+          .section-divider{padding:18px 0}
           .upload-layout{grid-template-columns:1fr;gap:28px;min-height:auto}
           .hero-desc{font-size:13px;margin-bottom:18px}
           .hero-features{display:none}
@@ -889,48 +937,61 @@ export default function App() {
 
           {/* RESULT */}
           {step==="result" && (
-            <div>
-              <div className="res-hdr">
-                <div>
+            <div className="result-wrap">
+
+              {/* Sticky top bar */}
+              <div className="res-topbar">
+                <div className="res-topbar-left">
                   <div className="res-eyebrow">Structured from handwriting</div>
                   <div className="res-title">{title}</div>
                 </div>
                 <button className="btn btn-ghost" onClick={reset}>↩ New image</button>
               </div>
 
-              <div className="two-col">
-                {/* NOTES */}
-                <div className="card" ref={notesCardRef}>
-                  <div className="card-head">
-                    <span className="card-label">✦ Notes</span>
+              {/* NOTES — full width */}
+              <section className="result-section" ref={notesCardRef}>
+                <div className="section-hdr">
+                  <div className="section-label">✦ Notes</div>
+                  <div className="section-actions">
                     <div className="toggle-group">
                       <button className={`toggle-btn ${notesMode==="preview"?"active":""}`} onClick={()=>setNotesMode("preview")}>Preview</button>
                       <button className={`toggle-btn ${notesMode==="edit"?"active":""}`} onClick={()=>setNotesMode("edit")}>Edit</button>
                     </div>
-                  </div>
-                  {notesMode==="edit"
-                    ? <textarea className="notes-ta" value={notes} onChange={e=>setNotes(e.target.value)} spellCheck={false} placeholder="Your notes…"/>
-                    : <div className="notes-prev nc" dangerouslySetInnerHTML={{__html:mdToHtml(notes)}}/>
-                  }
-                  <div className="dl-strip">
                     <button className="dl-btn dl-jpg" disabled={dlBusy==="notes-jpg"} onClick={dlNotesJpg}>{dlBusy==="notes-jpg"?"…":"🖼"} JPG</button>
                     <button className="dl-btn dl-doc" disabled={dlBusy==="notes-docx"} onClick={dlNotesDocx}>{dlBusy==="notes-docx"?"…":"📄"} DOCX</button>
                   </div>
                 </div>
+                <div className="section-body">
+                  {notesMode==="edit"
+                    ? <textarea className="notes-ta-full" value={notes} onChange={e=>setNotes(e.target.value)} spellCheck={false} placeholder="Your notes…"/>
+                    : <div className="notes-prev-full nc" dangerouslySetInnerHTML={{__html:mdToHtml(notes)}}/>
+                  }
+                </div>
+              </section>
 
-                {/* DIAGRAM */}
-                <div className="card" ref={flowCardRef} style={{minHeight:"calc(100vh - 280px)"}}>                
-                  <div className="card-head">
-                    <span className="card-label">◈ Flow Diagram</span>
-                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:7,color:"var(--muted)",letterSpacing:2,textTransform:"uppercase"}}>Interactive Editor</span>
-                  </div>
-                  <FlowEditor nodes={flowNodes} edges={flowEdges} onChange={(n,e)=>{setFlowNodes(n);setFlowEdges(e);}} />
-                  <div className="dl-strip">
+              {/* DIVIDER */}
+              <div className="section-divider">
+                <span>◈</span>
+                <div className="divider-line"/>
+                <span className="divider-label">Flow Diagram</span>
+                <div className="divider-line"/>
+                <span>◈</span>
+              </div>
+
+              {/* DIAGRAM — full width */}
+              <section className="result-section" ref={flowCardRef}>
+                <div className="section-hdr">
+                  <div className="section-label">◈ Visual Flow Diagram</div>
+                  <div className="section-actions">
+                    <span className="interactive-badge">Interactive Editor</span>
                     <button className="dl-btn dl-jpg" disabled={dlBusy==="diag-jpg"} onClick={dlDiagramJpg}>{dlBusy==="diag-jpg"?"…":"🖼"} JPG</button>
                     <button className="dl-btn dl-svg" onClick={dlDiagramSvg}>◈ SVG</button>
                   </div>
                 </div>
-              </div>
+                <div className="section-body diagram-body">
+                  <FlowEditor nodes={flowNodes} edges={flowEdges} onChange={(n,e)=>{setFlowNodes(n);setFlowEdges(e);}} />
+                </div>
+              </section>
 
               {dlError && <div className="dl-err">⚠ {dlError}</div>}
               <div className="sep"/>
