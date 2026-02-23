@@ -324,7 +324,7 @@ function FlowEditor({ nodes, edges, onChange }) {
         <button className="fe-btn" onClick={()=>{setZoom(0.9);setPan({x:40,y:20});}}>⊡ Reset</button>
       </div>
 
-      <svg ref={svgRef} style={{flex:1,minHeight:500,display:"block",cursor:panningSt?"grabbing":connecting?"crosshair":"grab",background:"transparent",touchAction:"none"}}
+      <svg ref={svgRef} style={{flex:1,minHeight:400,display:"block",cursor:panningSt?"grabbing":connecting?"crosshair":"grab",background:"transparent",touchAction:"none"}}
         onMouseDown={onSvgMD} onMouseMove={onMM} onMouseUp={onMU} onWheel={onWheel}
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         <defs>
@@ -337,9 +337,6 @@ function FlowEditor({ nodes, edges, onChange }) {
           <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
             <circle cx="1.5" cy="1.5" r="1" fill="rgba(160,130,90,0.14)" />
           </pattern>
-          <filter id="vignette" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="40" result="blur"/>
-          </filter>
         </defs>
         <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
           <rect x="-2000" y="-2000" width="6000" height="6000" fill="url(#dots)" />
@@ -401,6 +398,8 @@ export default function App() {
   const [title, setTitle]         = useState("");
   const [notes, setNotes]         = useState("");
   const [notesMode, setNotesMode] = useState("preview");
+  // "notes" | "diagram" — used for tablet tab switching
+  const [activeTab, setActiveTab] = useState("notes");
   const [flowNodes, setFlowNodes] = useState({});
   const [flowEdges, setFlowEdges] = useState([]);
   const [dlError, setDlError]     = useState("");
@@ -457,6 +456,7 @@ export default function App() {
       const {nodes:n,edges:e}=parseMermaidToGraph(code);
       setFlowNodes(n); setFlowEdges(e);
       setLoadPct(100);
+      setActiveTab("notes");
       setTimeout(() => setStep("result"), 300);
     } catch(e) {
       clearInterval(tick);
@@ -545,32 +545,28 @@ export default function App() {
         html{scroll-behavior:smooth;font-size:16px}
 
         :root{
-          /* Parchment palette */
           --parch-0:#faf5ec;
           --parch-1:#f5edd8;
           --parch-2:#ede0c4;
           --parch-3:#d8c9a8;
-          /* Ink */
           --ink-0:#1a0e06;
           --ink-1:#2e1a0a;
           --ink-2:#5a3a18;
           --ink-3:#8a6840;
           --ink-4:#b09060;
-          /* Accent */
           --acc:#6b3c18;
           --acc-h:#7a4a24;
           --acc-l:rgba(107,60,24,0.12);
-          /* Utility */
           --bd:#d0bfa0;
           --bd-l:#e8ddc8;
           --red:#7a2010;
           --blue:#1e3a6a;
           --green:#1a4428;
-          /* Layout */
           --r:10px;
           --r-lg:16px;
           --shadow:0 4px 28px rgba(26,14,6,0.08),0 1px 4px rgba(26,14,6,0.04);
           --shadow-lg:0 12px 48px rgba(26,14,6,0.12),0 2px 8px rgba(26,14,6,0.06);
+          --nav-h:60px;
         }
 
         body{
@@ -581,62 +577,72 @@ export default function App() {
           min-height:100vh;
         }
 
-        /* Subtle paper grain overlay */
         body::before{
           content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
           background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-          opacity:1;
         }
 
-        /* Horizontal rule accent used throughout */
-        .hr-accent{width:40px;height:1.5px;background:var(--acc);display:block;margin:0 auto}
+        .app{min-height:100vh;position:relative;z-index:1;display:flex;flex-direction:column}
 
-        .app{min-height:100vh;position:relative;z-index:1}
-        .wrap{
-          width:100%;max-width:1280px;margin:0 auto;
-          padding:40px 56px 100px;
-        }
-
-        /* ── PAGE REVEAL ── */
-        .reveal{opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s ease}
-        .reveal.in{opacity:1;transform:none}
-
-        /* ── HEADER ── */
-        .hdr{
-          display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
-          margin-bottom:52px;padding-bottom:24px;
+        /* ── TOPNAV (always visible, fixed) ── */
+        .topnav{
+          position:fixed;top:0;left:0;right:0;z-index:100;
+          height:var(--nav-h);
+          background:rgba(250,245,236,0.95);
+          backdrop-filter:blur(12px);
+          -webkit-backdrop-filter:blur(12px);
           border-bottom:1px solid var(--bd-l);
+          display:flex;align-items:center;justify-content:space-between;
+          padding:0 48px;
         }
-        .hdr-brand{display:flex;align-items:center;gap:16px}
-        .hdr-emblem{
-          width:42px;height:42px;border-radius:50%;
+        .topnav-brand{display:flex;align-items:center;gap:14px}
+        .topnav-emblem{
+          width:38px;height:38px;border-radius:50%;
           border:1.5px solid var(--bd);
           display:flex;align-items:center;justify-content:center;
-          background:var(--parch-1);
-          font-size:18px;
-          box-shadow:0 2px 8px rgba(26,14,6,0.1);
-          flex-shrink:0;
+          background:var(--parch-1);font-size:16px;
+          box-shadow:0 2px 8px rgba(26,14,6,0.1);flex-shrink:0;
         }
         .brand-name{
           font-family:'Cormorant Garamond',serif;
-          font-size:26px;font-weight:700;
-          color:var(--ink-0);letter-spacing:-0.3px;
-          line-height:1.1;
+          font-size:24px;font-weight:700;color:var(--ink-0);letter-spacing:-0.3px;line-height:1.1;
         }
         .brand-name em{font-style:italic;color:var(--acc)}
         .brand-sub{
-          font-family:'DM Mono',monospace;
-          font-size:9px;letter-spacing:3px;text-transform:uppercase;
-          color:var(--ink-4);margin-top:2px;
+          font-family:'DM Mono',monospace;font-size:8px;
+          letter-spacing:3px;text-transform:uppercase;color:var(--ink-4);margin-top:2px;
         }
-        .hdr-meta{
-          font-family:'DM Mono',monospace;font-size:9px;
+        .topnav-right{
+          display:flex;align-items:center;gap:16px;
+        }
+        .topnav-meta{
+          font-family:'DM Mono',monospace;font-size:8px;
           letter-spacing:2.5px;text-transform:uppercase;color:var(--ink-4);
-          text-align:right;
         }
-        .hdr-meta span{display:block;margin-top:3px;font-size:8px;color:var(--bd)}
 
-        /* ── EYEBROW + H1 ── */
+        /* page body below fixed nav */
+        .page-body{
+          margin-top:var(--nav-h);
+          flex:1;
+          display:flex;
+          flex-direction:column;
+        }
+
+        /* ── REVEAL ── */
+        .reveal{opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s ease}
+        .reveal.in{opacity:1;transform:none}
+
+        /* ── UPLOAD LAYOUT ── */
+        .upload-wrap{
+          max-width:1200px;margin:0 auto;width:100%;
+          padding:64px 48px 100px;
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:80px;align-items:center;
+          min-height:calc(100vh - var(--nav-h));
+        }
+        .upload-left{display:flex;flex-direction:column}
+
         .eyebrow{
           font-family:'DM Mono',monospace;font-size:9px;letter-spacing:4px;
           text-transform:uppercase;color:var(--ink-3);
@@ -646,344 +652,213 @@ export default function App() {
 
         h1{
           font-family:'Cormorant Garamond',serif;
-          font-size:clamp(40px,5.5vw,68px);
-          font-weight:700;line-height:1.03;color:var(--ink-0);
-          letter-spacing:-1px;
+          font-size:clamp(38px,5vw,64px);
+          font-weight:700;line-height:1.03;color:var(--ink-0);letter-spacing:-1px;
+          margin-bottom:24px;
         }
         h1 em{font-style:italic;color:var(--acc);font-weight:600}
 
-        /* ── BUTTONS ── */
-        .btn{
-          font-family:'DM Mono',monospace;font-size:10px;
-          letter-spacing:2px;text-transform:uppercase;font-weight:500;
-          border:none;cursor:pointer;border-radius:var(--r);
-          display:inline-flex;align-items:center;gap:8px;
-          transition:all .2s;padding:11px 20px;white-space:nowrap;
-        }
-        .btn:disabled{opacity:.38;cursor:not-allowed}
-
-        .btn-primary{
-          background:var(--ink-0);color:var(--parch-0);
-          width:100%;justify-content:center;
-          padding:17px;border-radius:var(--r);
-          font-size:11px;letter-spacing:3px;
-          box-shadow:0 4px 20px rgba(26,14,6,0.22);
-          position:relative;overflow:hidden;
-        }
-        .btn-primary::after{
-          content:'';position:absolute;inset:0;
-          background:linear-gradient(135deg,rgba(255,255,255,0.05),transparent);
-          pointer-events:none;
-        }
-        .btn-primary:hover:not(:disabled){
-          background:var(--ink-1);
-          transform:translateY(-2px);
-          box-shadow:0 8px 32px rgba(26,14,6,0.28);
-        }
-        .btn-primary:active:not(:disabled){transform:translateY(0)}
-
-        .btn-ghost{
-          background:transparent;
-          border:1px solid var(--bd);
-          color:var(--ink-2);
-          padding:9px 18px;
-        }
-        .btn-ghost:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-l)}
-
-        .btn-danger{
-          background:transparent;border:1px solid rgba(122,32,16,0.25);
-          color:var(--red);padding:9px 16px;
-        }
-        .btn-danger:hover{background:rgba(122,32,16,0.06)}
-
-        /* ── DROP ZONE ── */
-        .drop{
-          border:1.5px dashed var(--bd);
-          background:var(--parch-1);
-          border-radius:var(--r-lg);
-          padding:72px 40px;
-          text-align:center;
-          cursor:pointer;
-          transition:all .3s;
-          position:relative;
-          min-height:300px;
-          display:flex;flex-direction:column;align-items:center;justify-content:center;
-        }
-        .drop:hover,.drop.over{
-          border-color:var(--acc);
-          background:#f8f0e0;
-          transform:translateY(-3px);
-          box-shadow:var(--shadow-lg);
-        }
-        .drop-icon{
-          font-size:44px;margin-bottom:20px;
-          filter:drop-shadow(0 2px 4px rgba(26,14,6,0.15));
-        }
-        .drop-title{
-          font-family:'Cormorant Garamond',serif;
-          font-size:22px;font-weight:600;font-style:italic;
-          color:var(--ink-1);margin-bottom:8px;
-        }
-        .drop-sub{
-          font-family:'EB Garamond',serif;
-          font-size:14px;font-style:italic;color:var(--ink-3);
-        }
-        .drop-hint{
-          margin-top:20px;
-          font-family:'DM Mono',monospace;
-          font-size:8px;letter-spacing:2px;text-transform:uppercase;
-          color:var(--bd);
-        }
-
-        /* ── IMAGE PREVIEW ── */
-        .img-prev{
-          border-radius:var(--r-lg);overflow:hidden;
-          border:1px solid var(--bd-l);margin-bottom:16px;
-          position:relative;box-shadow:var(--shadow);
-        }
-        .img-prev img{width:100%;max-height:280px;object-fit:contain;background:var(--parch-1);display:block}
-        .img-badge{
-          position:absolute;top:12px;left:12px;
-          background:var(--ink-0);color:var(--parch-0);
-          font-family:'DM Mono',monospace;font-size:8px;
-          letter-spacing:2px;padding:4px 12px;border-radius:100px;
-          text-transform:uppercase;
-        }
-
-        /* ── UPLOAD LAYOUT ── */
-        .upload-layout{
-          display:grid;
-          grid-template-columns:1fr 1fr;
-          gap:80px;align-items:center;
-          min-height:72vh;padding:16px 0;
-        }
-        .upload-left{display:flex;flex-direction:column}
-        .upload-left h1{margin-bottom:24px}
         .hero-desc{
           font-family:'EB Garamond',serif;
-          font-size:16px;line-height:1.9;
-          color:var(--ink-2);margin-bottom:40px;
-          max-width:420px;
+          font-size:16px;line-height:1.9;color:var(--ink-2);
+          margin-bottom:36px;max-width:420px;
         }
+
+        /* Feature pills — visible on desktop & tablet (condensed) */
         .hero-features{display:flex;flex-direction:column;gap:0}
         .feat{
           font-family:'DM Mono',monospace;font-size:9px;
           letter-spacing:2.5px;text-transform:uppercase;color:var(--ink-3);
           display:flex;align-items:center;gap:12px;
-          padding:10px 0;
-          border-bottom:1px solid var(--bd-l);
+          padding:10px 0;border-bottom:1px solid var(--bd-l);
         }
         .feat:first-child{border-top:1px solid var(--bd-l)}
         .feat-dot{width:6px;height:6px;border-radius:50%;background:var(--acc);flex-shrink:0}
+
+        /* Condensed feature grid for tablet */
+        .hero-features-grid{
+          display:none;
+          grid-template-columns:1fr 1fr;
+          gap:8px 16px;margin-bottom:24px;
+        }
+        .feat-grid-item{
+          font-family:'DM Mono',monospace;font-size:8px;
+          letter-spacing:2px;text-transform:uppercase;color:var(--ink-3);
+          display:flex;align-items:center;gap:8px;padding:6px 0;
+        }
+
+        /* ── DROP ZONE ── */
+        .drop{
+          border:1.5px dashed var(--bd);background:var(--parch-1);
+          border-radius:var(--r-lg);padding:64px 40px;
+          text-align:center;cursor:pointer;transition:all .3s;
+          min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+        }
+        .drop:hover,.drop.over{
+          border-color:var(--acc);background:#f8f0e0;
+          transform:translateY(-3px);box-shadow:var(--shadow-lg);
+        }
+        .drop-icon{font-size:44px;margin-bottom:20px;filter:drop-shadow(0 2px 4px rgba(26,14,6,0.15));}
+        .drop-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;font-style:italic;color:var(--ink-1);margin-bottom:8px;}
+        .drop-sub{font-family:'EB Garamond',serif;font-size:14px;font-style:italic;color:var(--ink-3);}
+        .drop-hint{margin-top:20px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--bd);}
 
         /* ── UPLOAD OPTION BUTTONS ── */
         .upload-btns{display:flex;align-items:stretch;gap:12px;margin-top:16px}
         .upload-opt{
           flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;
-          padding:18px 14px;
-          border:1.5px solid var(--bd-l);border-radius:var(--r);
-          background:var(--parch-0);cursor:pointer;
-          transition:all .2s;text-align:center;
+          padding:16px 14px;border:1.5px solid var(--bd-l);border-radius:var(--r);
+          background:var(--parch-0);cursor:pointer;transition:all .2s;text-align:center;
         }
-        .upload-opt:hover{
-          border-color:var(--acc);
-          background:var(--parch-1);
-          transform:translateY(-2px);
-          box-shadow:0 6px 20px rgba(107,60,24,0.1);
-        }
+        .upload-opt:hover{border-color:var(--acc);background:var(--parch-1);transform:translateY(-2px);box-shadow:0 6px 20px rgba(107,60,24,0.1);}
         .upload-opt-icon{font-size:24px;line-height:1}
-        .upload-opt-label{
-          font-family:'DM Mono',monospace;font-size:9px;
-          letter-spacing:2px;text-transform:uppercase;
-          color:var(--ink-1);font-weight:500;
-        }
-        .upload-opt-sub{
-          font-family:'EB Garamond',serif;
-          font-size:12px;color:var(--ink-3);font-style:italic;
-        }
-        .upload-or{
-          font-family:'EB Garamond',serif;
-          font-size:13px;color:var(--ink-4);font-style:italic;
-          display:flex;align-items:center;padding:0 4px;align-self:center;
-        }
+        .upload-opt-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-1);font-weight:500;}
+        .upload-opt-sub{font-family:'EB Garamond',serif;font-size:12px;color:var(--ink-3);font-style:italic;}
+        .upload-or{font-family:'EB Garamond',serif;font-size:13px;color:var(--ink-4);font-style:italic;display:flex;align-items:center;padding:0 4px;align-self:center;}
+
+        /* ── IMAGE PREVIEW ── */
+        .img-prev{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--bd-l);margin-bottom:16px;position:relative;box-shadow:var(--shadow);}
+        .img-prev img{width:100%;max-height:260px;object-fit:contain;background:var(--parch-1);display:block}
+        .img-badge{position:absolute;top:12px;left:12px;background:var(--ink-0);color:var(--parch-0);font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;padding:4px 12px;border-radius:100px;text-transform:uppercase;}
+
+        /* ── BUTTONS ── */
+        .btn{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:500;border:none;cursor:pointer;border-radius:var(--r);display:inline-flex;align-items:center;gap:8px;transition:all .2s;padding:11px 20px;white-space:nowrap;}
+        .btn:disabled{opacity:.38;cursor:not-allowed}
+        .btn-primary{background:var(--ink-0);color:var(--parch-0);width:100%;justify-content:center;padding:17px;font-size:11px;letter-spacing:3px;box-shadow:0 4px 20px rgba(26,14,6,0.22);position:relative;overflow:hidden;}
+        .btn-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.05),transparent);pointer-events:none;}
+        .btn-primary:hover:not(:disabled){background:var(--ink-1);transform:translateY(-2px);box-shadow:0 8px 32px rgba(26,14,6,0.28);}
+        .btn-primary:active:not(:disabled){transform:translateY(0)}
+        .btn-ghost{background:transparent;border:1px solid var(--bd);color:var(--ink-2);padding:9px 18px;}
+        .btn-ghost:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-l)}
 
         /* ── LOADING ── */
         .loading-wrap{text-align:center;padding:52px 24px}
-        .loading-spinner{
-          width:44px;height:44px;margin:0 auto 20px;
-          border-radius:50%;
-          border:1.5px solid var(--bd-l);
-          border-top-color:var(--acc);
-          animation:spin .9s linear infinite;
-        }
+        .loading-spinner{width:44px;height:44px;margin:0 auto 20px;border-radius:50%;border:1.5px solid var(--bd-l);border-top-color:var(--acc);animation:spin .9s linear infinite;}
         @keyframes spin{to{transform:rotate(360deg)}}
-        .loading-msg{
-          font-family:'EB Garamond',serif;
-          font-size:15px;font-style:italic;
-          color:var(--ink-2);margin-bottom:16px;
-        }
-        .progress-track{
-          width:200px;margin:0 auto;height:2px;
-          background:var(--bd-l);border-radius:2px;overflow:hidden;
-        }
-        .progress-fill{
-          height:100%;background:var(--acc);
-          border-radius:2px;
-          transition:width .6s ease;
-        }
-
-        /* Loading dots */
+        .loading-msg{font-family:'EB Garamond',serif;font-size:15px;font-style:italic;color:var(--ink-2);margin-bottom:16px;}
+        .progress-track{width:200px;margin:0 auto;height:2px;background:var(--bd-l);border-radius:2px;overflow:hidden;}
+        .progress-fill{height:100%;background:var(--acc);border-radius:2px;transition:width .6s ease;}
         .ld{display:inline-flex;gap:4px;align-items:center;vertical-align:middle}
-        .ld-d{
-          width:4px;height:4px;border-radius:50%;
-          background:var(--parch-0);
-          animation:ldpulse 1.2s ease infinite;
-        }
+        .ld-d{width:4px;height:4px;border-radius:50%;background:var(--parch-0);animation:ldpulse 1.2s ease infinite;}
         .ld-d:nth-child(2){animation-delay:.2s}
         .ld-d:nth-child(3){animation-delay:.4s}
         @keyframes ldpulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
 
         /* ── ERROR ── */
-        .err-box{
-          background:rgba(122,32,16,0.05);
-          border:1px solid rgba(122,32,16,0.18);
-          border-radius:var(--r);
-          padding:12px 16px;color:var(--red);
-          font-size:13px;margin-top:14px;
-          font-family:'DM Mono',monospace;
-          line-height:1.6;
-        }
+        .err-box{background:rgba(122,32,16,0.05);border:1px solid rgba(122,32,16,0.18);border-radius:var(--r);padding:12px 16px;color:var(--red);font-size:13px;margin-top:14px;font-family:'DM Mono',monospace;line-height:1.6;}
         .err-box::before{content:'⚠  ';opacity:.7}
 
-        /* ── RESULT ── */
-        /* Sticky topbar */
+        /* ═══════════════════════════════════════════════════════
+           RESULT LAYOUT — THE BIG FIX
+           Desktop (≥1025px): side-by-side notes | diagram
+           Tablet (768–1024px): tabs switching
+           Mobile (<768px): stacked
+        ═══════════════════════════════════════════════════════ */
+
+        .result-page{
+          display:flex;flex-direction:column;
+          flex:1;min-height:calc(100vh - var(--nav-h));
+        }
+
+        /* Sticky result topbar — lives inside page flow, fixed under nav */
         .res-topbar{
-          position:sticky;top:0;z-index:50;
-          background:rgba(250,245,236,0.96);
+          position:sticky;
+          top:var(--nav-h);
+          z-index:90;
+          background:rgba(250,245,236,0.97);
           backdrop-filter:blur(10px);
           -webkit-backdrop-filter:blur(10px);
           border-bottom:1px solid var(--bd-l);
-          padding:14px 56px;margin:0 -56px 36px;
+          padding:12px 48px;
           display:flex;align-items:center;
           justify-content:space-between;flex-wrap:wrap;gap:12px;
         }
-        .res-eyebrow{
-          font-family:'DM Mono',monospace;font-size:8px;
-          letter-spacing:3px;text-transform:uppercase;
-          color:var(--ink-4);margin-bottom:4px;
+        .res-eyebrow{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--ink-4);margin-bottom:3px;}
+        .res-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;font-style:italic;color:var(--ink-0);line-height:1.1;}
+
+        /* Tablet tab bar — hidden on desktop & mobile */
+        .tab-bar{
+          display:none;
+          border-bottom:1px solid var(--bd-l);
+          background:var(--parch-1);
+          padding:0 32px;
         }
-        .res-title{
-          font-family:'Cormorant Garamond',serif;
-          font-size:26px;font-weight:700;font-style:italic;
-          color:var(--ink-0);line-height:1.1;
+        .tab-btn{
+          font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;
+          padding:14px 20px;border:none;background:transparent;cursor:pointer;
+          color:var(--ink-4);border-bottom:2px solid transparent;
+          transition:all .2s;margin-bottom:-1px;
+        }
+        .tab-btn.active{color:var(--acc);border-bottom-color:var(--acc);}
+
+        /* Desktop split layout */
+        .result-split{
+          display:grid;
+          grid-template-columns:45% 55%;
+          flex:1;
+          min-height:0;
+          overflow:hidden;
         }
 
-        /* Section card */
-        .result-section{
-          background:var(--parch-0);
-          border:1px solid var(--bd-l);
-          border-radius:var(--r-lg);
-          overflow:hidden;
-          margin-bottom:0;
-          box-shadow:var(--shadow);
+        /* Each panel scrolls independently */
+        .result-panel{
+          overflow-y:auto;
+          height:calc(100vh - var(--nav-h) - 60px);
+          border-right:1px solid var(--bd-l);
+          display:flex;flex-direction:column;
         }
-        .section-hdr{
-          display:flex;align-items:center;
-          justify-content:space-between;flex-wrap:wrap;gap:12px;
-          padding:14px 28px;
+        .result-panel:last-child{border-right:none;}
+
+        /* Panel header */
+        .panel-hdr{
+          display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+          padding:12px 28px;
           background:var(--parch-1);
           border-bottom:1px solid var(--bd-l);
+          position:sticky;top:0;z-index:10;
+          flex-shrink:0;
         }
-        .section-label{
-          font-family:'DM Mono',monospace;font-size:9px;
-          letter-spacing:3px;text-transform:uppercase;color:var(--ink-3);
+        .panel-label{
+          font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--ink-3);
           display:flex;align-items:center;gap:10px;
         }
-        .section-label::before{
-          content:'';width:16px;height:1px;background:var(--acc);
-        }
-        .section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .panel-label::before{content:'';width:14px;height:1px;background:var(--acc);}
+        .panel-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 
-        /* Notes area */
+        /* Notes content */
         .notes-ta-full{
-          width:100%;min-height:60vh;
+          width:100%;flex:1;
           background:transparent;border:none;outline:none;
-          padding:36px 52px;
-          color:var(--ink-2);
-          font-family:'DM Mono',monospace;font-size:13px;
-          line-height:1.9;resize:vertical;
+          padding:32px 40px;
+          color:var(--ink-2);font-family:'DM Mono',monospace;font-size:13px;
+          line-height:1.9;resize:none;
+          min-height:400px;
         }
-        .notes-prev-full{
-          padding:36px 52px;min-height:50vh;
-        }
+        .notes-prev-full{padding:32px 40px;flex:1;}
 
-        /* Rendered notes styles */
-        .nc h1{
-          font-family:'Cormorant Garamond',serif;
-          font-size:24px;font-weight:700;font-style:italic;
-          color:var(--ink-0);margin:0 0 20px;
-          padding-bottom:14px;
-          border-bottom:1px solid var(--bd-l);
-        }
-        .nc h2{
-          font-family:'Cormorant Garamond',serif;
-          font-size:19px;font-weight:600;font-style:italic;
-          color:var(--ink-1);margin:28px 0 10px;
-        }
-        .nc h3{
-          font-family:'DM Mono',monospace;font-size:9px;
-          font-weight:500;color:var(--ink-3);
-          margin:20px 0 8px;text-transform:uppercase;letter-spacing:3px;
-        }
-        .nc p{
-          font-size:15px;line-height:1.95;color:var(--ink-2);
-          margin-bottom:14px;font-family:'EB Garamond',serif;
-        }
-        .nc ul{list-style:none;padding:0;margin:8px 0 16px}
-        .nc ol{padding-left:22px;margin:8px 0 16px}
-        .nc li{
-          font-size:14.5px;line-height:1.85;color:var(--ink-2);
-          padding:3px 0 3px 22px;position:relative;
-          font-family:'EB Garamond',serif;
-        }
-        .nc ul li::before{
-          content:'·';position:absolute;left:4px;
-          color:var(--acc);font-size:18px;line-height:1.1;
-        }
+        /* Rendered notes */
+        .nc h1{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;font-style:italic;color:var(--ink-0);margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid var(--bd-l);}
+        .nc h2{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;font-style:italic;color:var(--ink-1);margin:24px 0 8px;}
+        .nc h3{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;color:var(--ink-3);margin:18px 0 6px;text-transform:uppercase;letter-spacing:3px;}
+        .nc p{font-size:15px;line-height:1.95;color:var(--ink-2);margin-bottom:12px;font-family:'EB Garamond',serif;}
+        .nc ul{list-style:none;padding:0;margin:8px 0 14px}
+        .nc ol{padding-left:22px;margin:8px 0 14px}
+        .nc li{font-size:14.5px;line-height:1.85;color:var(--ink-2);padding:3px 0 3px 22px;position:relative;font-family:'EB Garamond',serif;}
+        .nc ul li::before{content:'·';position:absolute;left:4px;color:var(--acc);font-size:18px;line-height:1.1;}
         .nc ol li{padding-left:0;list-style:decimal}
         .nc ol li::before{display:none}
         .nc strong{color:var(--ink-0);font-weight:700}
         .nc em{color:var(--acc-h);font-style:italic}
-        .nc code{
-          background:rgba(107,60,24,0.07);color:var(--acc);
-          padding:2px 7px;border-radius:4px;
-          font-family:'DM Mono',monospace;font-size:11.5px;
-        }
-        .nc hr{border:none;border-top:1px solid var(--bd-l);margin:22px 0}
+        .nc code{background:rgba(107,60,24,0.07);color:var(--acc);padding:2px 7px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11.5px;}
+        .nc hr{border:none;border-top:1px solid var(--bd-l);margin:20px 0}
 
         /* Toggle */
-        .toggle-group{
-          display:flex;gap:2px;
-          background:var(--bd-l);
-          border-radius:7px;padding:2px;
-        }
-        .toggle-btn{
-          font-family:'DM Mono',monospace;font-size:8px;
-          letter-spacing:1px;text-transform:uppercase;
-          padding:5px 12px;border:none;border-radius:5px;
-          cursor:pointer;background:transparent;color:var(--ink-3);
-          transition:all .15s;
-        }
-        .toggle-btn.active{background:var(--ink-0);color:var(--parch-0)}
+        .toggle-group{display:flex;gap:2px;background:var(--bd-l);border-radius:7px;padding:2px;}
+        .toggle-btn{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:5px 11px;border:none;border-radius:5px;cursor:pointer;background:transparent;color:var(--ink-3);transition:all .15s;}
+        .toggle-btn.active{background:var(--ink-0);color:var(--parch-0);}
 
         /* Download buttons */
-        .dl-btn{
-          font-family:'DM Mono',monospace;font-size:8px;
-          letter-spacing:1.5px;text-transform:uppercase;font-weight:400;
-          border:none;cursor:pointer;border-radius:6px;
-          display:inline-flex;align-items:center;gap:6px;
-          padding:7px 13px;transition:all .2s;
-        }
+        .dl-btn{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;font-weight:400;border:none;cursor:pointer;border-radius:6px;display:inline-flex;align-items:center;gap:5px;padding:7px 12px;transition:all .2s;white-space:nowrap;}
         .dl-btn:disabled{opacity:.35;cursor:not-allowed}
         .dl-jpg{background:rgba(107,60,24,0.07);border:1px solid rgba(107,60,24,0.18);color:var(--acc)}
         .dl-jpg:hover:not(:disabled){background:rgba(107,60,24,0.12)}
@@ -992,41 +867,18 @@ export default function App() {
         .dl-svg{background:rgba(26,68,40,0.06);border:1px solid rgba(26,68,40,0.15);color:var(--green)}
         .dl-svg:hover:not(:disabled){background:rgba(26,68,40,0.1)}
 
-        /* Section divider */
-        .section-divider{
-          display:flex;align-items:center;gap:16px;
-          padding:32px 0;color:var(--bd);
+        /* Diagram panel body */
+        .diagram-panel-body{
+          flex:1;display:flex;flex-direction:column;min-height:0;
+          /* allow inner FlowEditor to grow */
         }
-        .divider-line{flex:1;height:1px;background:var(--bd-l)}
-        .divider-label{
-          font-family:'DM Mono',monospace;font-size:8px;
-          letter-spacing:4px;text-transform:uppercase;
-          color:var(--ink-3);white-space:nowrap;
-        }
-        .divider-ornament{
-          font-size:14px;color:var(--bd);
-          font-family:'Cormorant Garamond',serif;
-        }
+        .diagram-panel-body > div{flex:1;display:flex;flex-direction:column;min-height:0;}
 
         /* ── FLOW EDITOR ── */
-        .diagram-body{min-height:80vh;display:flex;flex-direction:column}
-        .diagram-body > div{flex:1;min-height:80vh}
-
-        .fe-toolbar{
-          display:flex;align-items:center;gap:6px;
-          padding:10px 18px;
-          background:var(--parch-1);
-          border-bottom:1px solid var(--bd-l);
-          flex-shrink:0;flex-wrap:wrap;min-height:48px;
-        }
-        .fe-btn{
-          font-family:'DM Mono',monospace;font-size:8px;
-          letter-spacing:.5px;text-transform:uppercase;
-          padding:6px 11px;
-          border:1px solid var(--bd-l);
-          background:var(--parch-0);color:var(--ink-2);
-          border-radius:5px;cursor:pointer;transition:all .15s;white-space:nowrap;
-        }
+        .fe-toolbar{display:flex;align-items:center;gap:6px;padding:10px 16px;background:var(--parch-1);border-bottom:1px solid var(--bd-l);flex-shrink:0;flex-wrap:wrap;min-height:48px;position:relative;}
+        /* scroll fade hint on mobile */
+        .fe-toolbar::after{content:'';position:absolute;right:0;top:0;bottom:0;width:32px;background:linear-gradient(to right,transparent,var(--parch-1));pointer-events:none;display:none;}
+        .fe-btn{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.5px;text-transform:uppercase;padding:6px 11px;border:1px solid var(--bd-l);background:var(--parch-0);color:var(--ink-2);border-radius:5px;cursor:pointer;transition:all .15s;white-space:nowrap;}
         .fe-btn:hover{background:var(--parch-1);border-color:var(--acc);color:var(--acc)}
         .fe-btn-connect{border-color:rgba(30,58,106,0.2);color:var(--blue)}
         .fe-btn-connect:hover{background:rgba(30,58,106,0.06)}
@@ -1035,201 +887,175 @@ export default function App() {
         .fe-btn-del{border-color:rgba(122,32,16,0.2);color:var(--red)}
         .fe-btn-del:hover{background:rgba(122,32,16,0.06)}
         .fe-zoom-btn{padding:5px 9px}
-        .fe-sel{
-          font-family:'DM Mono',monospace;font-size:8px;
-          padding:5px 8px;border:1px solid var(--bd-l);
-          background:var(--parch-0);color:var(--ink-1);border-radius:5px;cursor:pointer;
-        }
-        .fe-zoom{
-          font-family:'DM Mono',monospace;font-size:8px;
-          color:var(--ink-4);min-width:30px;text-align:center;
-        }
-        .fe-hint{
-          font-family:'EB Garamond',serif;font-size:12px;
-          color:var(--acc);font-style:italic;
-          animation:fadepulse 1.5s ease infinite;
-        }
+        .fe-sel{font-family:'DM Mono',monospace;font-size:8px;padding:5px 8px;border:1px solid var(--bd-l);background:var(--parch-0);color:var(--ink-1);border-radius:5px;cursor:pointer;}
+        .fe-zoom{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink-4);min-width:30px;text-align:center;}
+        .fe-hint{font-family:'EB Garamond',serif;font-size:12px;color:var(--acc);font-style:italic;animation:fadepulse 1.5s ease infinite;}
         @keyframes fadepulse{0%,100%{opacity:.4}50%{opacity:1}}
-        .fe-hint-bar{
-          font-family:'EB Garamond',serif;font-size:11px;
-          color:var(--bd);font-style:italic;
-          text-align:center;padding:7px;flex-shrink:0;
-          border-top:1px solid var(--bd-l);
-        }
+        .fe-hint-bar{font-family:'EB Garamond',serif;font-size:11px;color:var(--bd);font-style:italic;text-align:center;padding:6px;flex-shrink:0;border-top:1px solid var(--bd-l);}
 
         /* ── EDIT POPUP ── */
-        .ep-overlay{
-          position:fixed;inset:0;
-          background:rgba(26,14,6,0.45);
-          z-index:200;display:flex;
-          align-items:center;justify-content:center;
-          backdrop-filter:blur(4px);
-          -webkit-backdrop-filter:blur(4px);
-          animation:fadeIn .15s ease;
-        }
+        .ep-overlay{position:fixed;inset:0;background:rgba(26,14,6,0.45);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:fadeIn .15s ease;}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-        .ep{
-          background:var(--parch-0);
-          border:1px solid var(--bd);
-          border-radius:var(--r-lg);
-          padding:28px;width:320px;
-          box-shadow:var(--shadow-lg);
-          animation:slideUp .2s ease;
-        }
+        .ep{background:var(--parch-0);border:1px solid var(--bd);border-radius:var(--r-lg);padding:28px;width:320px;box-shadow:var(--shadow-lg);animation:slideUp .2s ease;}
         @keyframes slideUp{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
-        .ep-title{
-          font-family:'Cormorant Garamond',serif;
-          font-size:17px;font-weight:600;font-style:italic;
-          color:var(--ink-0);margin-bottom:16px;
-        }
-        .ep-input{
-          width:100%;background:var(--parch-1);
-          border:1px solid var(--bd);border-radius:var(--r);
-          padding:11px 14px;color:var(--ink-0);
-          font-family:'EB Garamond',serif;font-size:15px;
-          outline:none;margin-bottom:14px;
-          transition:border-color .15s;
-        }
+        .ep-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;font-style:italic;color:var(--ink-0);margin-bottom:16px;}
+        .ep-input{width:100%;background:var(--parch-1);border:1px solid var(--bd);border-radius:var(--r);padding:11px 14px;color:var(--ink-0);font-family:'EB Garamond',serif;font-size:15px;outline:none;margin-bottom:14px;transition:border-color .15s;}
         .ep-input:focus{border-color:var(--acc)}
         .ep-row{display:flex;gap:8px}
-        .ep-ok{
-          flex:1;font-family:'DM Mono',monospace;font-size:9px;
-          letter-spacing:1.5px;text-transform:uppercase;
-          padding:10px;border:none;border-radius:var(--r);
-          cursor:pointer;background:var(--ink-0);color:var(--parch-0);
-          transition:background .15s;
-        }
+        .ep-ok{flex:1;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:10px;border:none;border-radius:var(--r);cursor:pointer;background:var(--ink-0);color:var(--parch-0);transition:background .15s;}
         .ep-ok:hover{background:var(--ink-1)}
-        .ep-cancel{
-          flex:1;font-family:'DM Mono',monospace;font-size:9px;
-          letter-spacing:1.5px;text-transform:uppercase;
-          padding:10px;border:1px solid var(--bd);border-radius:var(--r);
-          cursor:pointer;background:transparent;color:var(--ink-3);
-          transition:border-color .15s;
-        }
+        .ep-cancel{flex:1;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:10px;border:1px solid var(--bd);border-radius:var(--r);cursor:pointer;background:transparent;color:var(--ink-3);transition:border-color .15s;}
         .ep-cancel:hover{border-color:var(--acc);color:var(--acc)}
 
         /* ── FOOTER ── */
-        .sep{height:1px;background:var(--bd-l);margin:32px 0 24px}
-        .dl-err{
-          background:rgba(122,32,16,0.05);border:1px solid rgba(122,32,16,0.15);
-          border-radius:var(--r);padding:10px 14px;color:var(--red);
-          font-size:12px;margin-top:10px;font-family:'DM Mono',monospace;
-        }
-        .footer{
-          margin-top:64px;padding:24px 0;
-          border-top:1px solid var(--bd-l);
-          display:flex;align-items:center;justify-content:space-between;
-          flex-wrap:wrap;gap:8px;
-        }
-        .footer-brand{
-          font-family:'Cormorant Garamond',serif;
-          font-size:15px;font-style:italic;
-          color:var(--ink-3);
-        }
-        .footer-meta{
-          font-family:'DM Mono',monospace;font-size:8px;
-          letter-spacing:2.5px;text-transform:uppercase;color:var(--bd);
+        .dl-err{background:rgba(122,32,16,0.05);border:1px solid rgba(122,32,16,0.15);border-radius:var(--r);padding:10px 14px;color:var(--red);font-size:12px;margin:12px 48px;font-family:'DM Mono',monospace;}
+        .footer{padding:20px 48px;border-top:1px solid var(--bd-l);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:auto;}
+        .footer-brand{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:var(--ink-3);}
+        .footer-meta{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:var(--bd);}
+
+        /* ══════════════════════════════════════════════════════
+           RESPONSIVE
+        ══════════════════════════════════════════════════════ */
+
+        /* ── TABLET (768–1024px) ── */
+        @media(max-width:1024px){
+          .topnav{padding:0 32px;}
+          .topnav-meta{display:none;}
+
+          /* Upload: single column */
+          .upload-wrap{
+            grid-template-columns:1fr;
+            gap:40px;min-height:auto;
+            padding:48px 32px 80px;
+          }
+          .hero-features{display:none;}
+          .hero-features-grid{display:grid;}
+
+          /* Results: tabs instead of side-by-side */
+          .result-split{
+            grid-template-columns:1fr;
+            overflow:visible;
+          }
+          .tab-bar{display:flex;}
+          .res-topbar{padding:12px 32px;}
+
+          /* On tablet, panels don't need fixed height scroll — just flow naturally */
+          .result-panel{
+            height:auto;
+            overflow:visible;
+            border-right:none;
+            border-bottom:1px solid var(--bd-l);
+          }
+          .result-panel:last-child{border-bottom:none;}
+
+          /* Tab visibility — hide inactive panel on tablet */
+          .result-panel[data-tab="notes"]{display:flex;}
+          .result-panel[data-tab="diagram"]{display:flex;}
+
+          .panel-hdr{padding:12px 24px;}
+          .notes-ta-full,.notes-prev-full{padding:28px 28px;}
         }
 
-        /* ── RESPONSIVE: TABLET ── */
-        @media(max-width:900px){
-          .wrap{padding:32px 32px 80px}
-          .res-topbar{padding:12px 32px;margin:0 -32px 28px}
-          .upload-layout{grid-template-columns:1fr;gap:44px;min-height:auto;padding:0}
-          .hero-desc{font-size:15px;margin-bottom:28px}
-          .hero-features{display:none}
-          .notes-ta-full,.notes-prev-full{padding:28px 32px}
-          .diagram-body,.diagram-body > div{min-height:60vh}
-          .hdr{margin-bottom:36px;padding-bottom:20px}
-          h1{font-size:clamp(34px,6vw,50px)}
-          .section-hdr{padding:12px 20px}
-        }
+        /* ── MOBILE (< 768px) ── */
+        @media(max-width:767px){
+          :root{--nav-h:54px;}
+          .topnav{padding:0 18px;}
+          .brand-sub{display:none;}
+          .brand-name{font-size:20px;}
+          .topnav-emblem{width:34px;height:34px;font-size:14px;}
 
-        /* ── RESPONSIVE: MOBILE ── */
-        @media(max-width:600px){
-          .wrap{padding:20px 18px 60px}
-          .res-topbar{padding:10px 18px;margin:0 -18px 20px}
-          .res-title{font-size:20px}
-          .hdr{margin-bottom:24px;padding-bottom:16px}
-          .hdr-emblem{width:36px;height:36px;font-size:16px}
-          .brand-name{font-size:22px}
-          .brand-sub,.hdr-meta{display:none}
-          h1{font-size:clamp(30px,8.5vw,42px);letter-spacing:-0.5px}
-          .eyebrow{font-size:8px;letter-spacing:3px;margin-bottom:12px}
-          .upload-layout{gap:30px}
-          .drop{padding:48px 24px;border-radius:12px;min-height:240px}
-          .drop-icon{font-size:38px;margin-bottom:14px}
-          .drop-title{font-size:19px}
-          .drop-sub{font-size:13px}
-          .drop-hint{display:none}
-          .upload-btns{flex-direction:column;gap:8px}
-          .upload-opt{flex-direction:row;justify-content:flex-start;padding:14px 16px;gap:14px}
-          .upload-or{display:none}
-          .img-prev img{max-height:220px}
-          .btn-primary{padding:17px;font-size:10px;margin-top:16px!important;border-radius:var(--r)}
-          .notes-ta-full,.notes-prev-full{padding:20px 20px;min-height:42vh}
-          .section-hdr{padding:10px 16px;gap:8px;flex-direction:column;align-items:flex-start}
-          .section-actions{width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;gap:6px;-webkit-overflow-scrolling:touch}
-          .dl-btn{white-space:nowrap;flex-shrink:0;padding:8px 12px}
-          .section-divider{padding:20px 0}
-          .diagram-body,.diagram-body > div{min-height:50vh}
-          .fe-toolbar{overflow-x:auto;flex-wrap:nowrap;padding:8px 12px;gap:5px;-webkit-overflow-scrolling:touch}
-          .fe-btn{flex-shrink:0;padding:7px 10px}
-          .fe-hint-bar{font-size:10px;padding:6px 12px}
-          .ep{width:calc(100vw - 36px);max-width:340px;padding:22px}
-          .footer{flex-direction:column;align-items:center;text-align:center;margin-top:40px}
-          .nc h1{font-size:20px}
-          .nc h2{font-size:17px}
-          .nc p,.nc li{font-size:14px}
+          .upload-wrap{padding:28px 18px 60px;gap:28px;}
+          h1{font-size:clamp(28px,8vw,40px);letter-spacing:-0.5px;margin-bottom:16px;}
+          .eyebrow{font-size:8px;letter-spacing:3px;margin-bottom:10px;}
+          .hero-desc{font-size:15px;margin-bottom:24px;}
+          .hero-features-grid{display:none;}
+
+          .drop{padding:44px 20px;border-radius:12px;min-height:220px;}
+          .drop-icon{font-size:36px;margin-bottom:14px;}
+          .drop-title{font-size:18px;}
+          .drop-hint{display:none;}
+
+          /* Upload option buttons stack vertically */
+          .upload-btns{flex-direction:column;gap:8px;}
+          .upload-opt{flex-direction:row;justify-content:flex-start;padding:14px 16px;gap:14px;text-align:left;}
+          .upload-opt-icon{font-size:22px;}
+          .upload-or{display:none;}
+          .img-prev img{max-height:200px;}
+          .btn-primary{padding:16px;font-size:10px;margin-top:14px!important;}
+
+          /* Results: pure stacked, no tabs */
+          .tab-bar{padding:0 18px;}
+          .res-topbar{padding:10px 18px;}
+          .res-title{font-size:18px;}
+          .result-panel{height:auto;overflow:visible;}
+
+          .panel-hdr{padding:10px 16px;flex-direction:column;align-items:flex-start;gap:8px;}
+          .panel-actions{width:100%;overflow-x:auto;flex-wrap:nowrap;gap:6px;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
+          .dl-btn{flex-shrink:0;}
+
+          .notes-ta-full,.notes-prev-full{padding:20px 18px;min-height:340px;}
+
+          /* Toolbar scroll on mobile + fade hint */
+          .fe-toolbar{overflow-x:auto;flex-wrap:nowrap;padding:8px 12px;gap:5px;-webkit-overflow-scrolling:touch;}
+          .fe-toolbar::after{display:block;}
+          .fe-btn{flex-shrink:0;}
+          .fe-hint-bar{font-size:10px;padding:6px 12px;}
+
+          .ep{width:calc(100vw - 36px);max-width:340px;padding:22px;}
+          .dl-err{margin:8px 18px;}
+          .footer{padding:16px 18px;flex-direction:column;align-items:center;text-align:center;}
         }
 
         /* ── SMALL PHONE ── */
         @media(max-width:380px){
-          .wrap{padding:16px 14px 50px}
-          h1{font-size:27px}
-          .brand-name{font-size:19px}
-          .drop{padding:36px 18px}
-          .btn-primary{font-size:10px}
+          .upload-wrap{padding:20px 14px 50px;}
+          h1{font-size:26px;}
+          .drop{padding:34px 16px;}
         }
 
-        /* ── LARGE SCREENS ── */
+        /* ── LARGE SCREENS (≥1280px) ── */
         @media(min-width:1280px){
-          .wrap{padding:52px 72px 120px}
-          .res-topbar{padding:14px 72px;margin:0 -72px 40px}
-          .notes-ta-full,.notes-prev-full{padding:40px 64px}
+          .topnav{padding:0 64px;}
+          .upload-wrap{padding:72px 64px 120px;max-width:1280px;}
+          .res-topbar{padding:14px 64px;}
+          .panel-hdr{padding:14px 40px;}
+          .notes-ta-full,.notes-prev-full{padding:40px 56px;}
+          .footer{padding:22px 64px;}
         }
 
-        /* ── NO HOVER (TOUCH) ── */
+        /* ── NO HOVER (touch devices) ── */
         @media(hover:none){
-          .drop:hover{transform:none;box-shadow:none}
-          .btn-primary:hover:not(:disabled){transform:none;box-shadow:0 4px 20px rgba(26,14,6,0.22)}
-          .fe-btn:hover{background:var(--parch-0);border-color:var(--bd-l);color:var(--ink-2)}
-          .upload-opt:hover{transform:none;box-shadow:none}
+          .drop:hover{transform:none;box-shadow:none;}
+          .btn-primary:hover:not(:disabled){transform:none;box-shadow:0 4px 20px rgba(26,14,6,0.22);}
+          .upload-opt:hover{transform:none;box-shadow:none;}
         }
       `}</style>
 
       <div className="app">
-        <div className="wrap">
 
-          {/* ── HEADER ── */}
-          <div className={`hdr reveal ${revealed?"in":""}`}>
-            <div className="hdr-brand">
-              <div className="hdr-emblem">✒</div>
-              <div>
-                <div className="brand-name">Scri<em>vly</em></div>
-                <div className="brand-sub">Handwriting Intelligence</div>
-              </div>
-            </div>
-            <div className="hdr-meta">
-              AI-Powered Document Analysis
-              <span>Est. {currentYear}</span>
+        {/* ── FIXED TOPNAV ── */}
+        <nav className="topnav">
+          <div className="topnav-brand">
+            <div className="topnav-emblem">✒</div>
+            <div>
+              <div className="brand-name">Ink<em>Parse</em></div>
+              <div className="brand-sub">Handwriting Intelligence</div>
             </div>
           </div>
+          <div className="topnav-right">
+            {step === "result" && (
+              <button className="btn btn-ghost" onClick={reset} style={{padding:"8px 16px",fontSize:"9px"}}>↩ New image</button>
+            )}
+            <div className="topnav-meta">AI-Powered · {currentYear}</div>
+          </div>
+        </nav>
+
+        {/* ── PAGE BODY ── */}
+        <div className="page-body">
 
           {/* ── UPLOAD STEP ── */}
-          {step==="upload" && (
-            <div className={`upload-layout reveal ${revealed?"in":""}`} style={{transitionDelay:"0.08s"}}>
+          {step === "upload" && (
+            <div className={`upload-wrap reveal ${revealed ? "in" : ""}`} style={{transitionDelay:"0.08s"}}>
 
               {/* LEFT — hero */}
               <div className="upload-left">
@@ -1237,22 +1063,32 @@ export default function App() {
                 <h1>Your scribbles,<br /><em>precisely structured.</em></h1>
                 <p className="hero-desc">
                   Photograph any handwritten notes — rushed, rotated, densely annotated —
-                  and Scrivly transforms them into clean, structured text with an interactive
+                  and InkParse transforms them into clean, structured text with an interactive
                   flow diagram. Professional results in seconds.
                 </p>
+
+                {/* Desktop: vertical feature list */}
                 <div className="hero-features">
                   <div className="feat"><span className="feat-dot"/>Recognises any handwriting style</div>
                   <div className="feat"><span className="feat-dot"/>Automatic flowchart generation</div>
                   <div className="feat"><span className="feat-dot"/>Export to JPG, DOCX &amp; SVG</div>
                   <div className="feat"><span className="feat-dot"/>Fully interactive diagram editor</div>
                 </div>
+
+                {/* Tablet: condensed 2-column grid */}
+                <div className="hero-features-grid">
+                  <div className="feat-grid-item"><span className="feat-dot"/>Any handwriting style</div>
+                  <div className="feat-grid-item"><span className="feat-dot"/>Auto flowchart</div>
+                  <div className="feat-grid-item"><span className="feat-dot"/>JPG, DOCX & SVG export</div>
+                  <div className="feat-grid-item"><span className="feat-dot"/>Interactive editor</div>
+                </div>
               </div>
 
-              {/* RIGHT — upload */}
+              {/* RIGHT — upload zone */}
               <div className="upload-right">
                 {!image ? (
                   <div>
-                    <div className={`drop ${dragOver?"over":""}`}
+                    <div className={`drop ${dragOver ? "over" : ""}`}
                       onDragOver={e=>{e.preventDefault();setDragOver(true)}}
                       onDragLeave={()=>setDragOver(false)}
                       onDrop={handleDrop}
@@ -1316,8 +1152,8 @@ export default function App() {
           )}
 
           {/* ── RESULT STEP ── */}
-          {step==="result" && (
-            <div className="result-wrap">
+          {step === "result" && (
+            <div className="result-page">
 
               {/* Sticky topbar */}
               <div className="res-topbar">
@@ -1325,72 +1161,96 @@ export default function App() {
                   <div className="res-eyebrow">Structured from handwriting</div>
                   <div className="res-title">{title}</div>
                 </div>
-                <button className="btn btn-ghost" onClick={reset}>↩ New image</button>
+                {/* "New image" button visible in topbar on desktop only — on mobile it's in topnav */}
+                <button className="btn btn-ghost" onClick={reset} style={{display:"none"}}>↩ New image</button>
               </div>
 
-              {/* NOTES section */}
-              <section className="result-section" ref={notesCardRef}>
-                <div className="section-hdr">
-                  <div className="section-label">Extracted Notes</div>
-                  <div className="section-actions">
-                    <div className="toggle-group">
-                      <button className={`toggle-btn ${notesMode==="preview"?"active":""}`} onClick={()=>setNotesMode("preview")}>Preview</button>
-                      <button className={`toggle-btn ${notesMode==="edit"?"active":""}`} onClick={()=>setNotesMode("edit")}>Edit</button>
+              {/* Tablet tab bar */}
+              <div className="tab-bar">
+                <button className={`tab-btn ${activeTab==="notes"?"active":""}`} onClick={()=>setActiveTab("notes")}>
+                  Extracted Notes
+                </button>
+                <button className={`tab-btn ${activeTab==="diagram"?"active":""}`} onClick={()=>setActiveTab("diagram")}>
+                  Flow Diagram
+                </button>
+              </div>
+
+              {/* Desktop: side-by-side split | Tablet: tabs | Mobile: stacked */}
+              <div className="result-split">
+
+                {/* NOTES PANEL */}
+                <div
+                  className="result-panel"
+                  data-tab="notes"
+                  ref={notesCardRef}
+                  style={{
+                    // On tablet/mobile, hide the inactive tab panel via JS
+                  }}
+                >
+                  <div className="panel-hdr">
+                    <div className="panel-label">Extracted Notes</div>
+                    <div className="panel-actions">
+                      <div className="toggle-group">
+                        <button className={`toggle-btn ${notesMode==="preview"?"active":""}`} onClick={()=>setNotesMode("preview")}>Preview</button>
+                        <button className={`toggle-btn ${notesMode==="edit"?"active":""}`} onClick={()=>setNotesMode("edit")}>Edit</button>
+                      </div>
+                      <button className="dl-btn dl-jpg" disabled={dlBusy==="notes-jpg"} onClick={dlNotesJpg}>
+                        {dlBusy==="notes-jpg"?"Exporting…":"🖼 JPG"}
+                      </button>
+                      <button className="dl-btn dl-doc" disabled={dlBusy==="notes-docx"} onClick={dlNotesDocx}>
+                        {dlBusy==="notes-docx"?"Exporting…":"📄 DOCX"}
+                      </button>
                     </div>
-                    <button className="dl-btn dl-jpg" disabled={dlBusy==="notes-jpg"} onClick={dlNotesJpg}>
-                      {dlBusy==="notes-jpg"?"Exporting…":"🖼 JPG"}
-                    </button>
-                    <button className="dl-btn dl-doc" disabled={dlBusy==="notes-docx"} onClick={dlNotesDocx}>
-                      {dlBusy==="notes-docx"?"Exporting…":"📄 DOCX"}
-                    </button>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",flex:1}}>
+                    {notesMode==="edit"
+                      ? <textarea className="notes-ta-full" value={notes} onChange={e=>setNotes(e.target.value)} spellCheck={false} placeholder="Your extracted notes will appear here…"/>
+                      : <div className="notes-prev-full nc" dangerouslySetInnerHTML={{__html:mdToHtml(notes)}}/>
+                    }
                   </div>
                 </div>
-                <div>
-                  {notesMode==="edit"
-                    ? <textarea className="notes-ta-full" value={notes} onChange={e=>setNotes(e.target.value)} spellCheck={false} placeholder="Your extracted notes will appear here…"/>
-                    : <div className="notes-prev-full nc" dangerouslySetInnerHTML={{__html:mdToHtml(notes)}}/>
-                  }
-                </div>
-              </section>
 
-              {/* Section divider */}
-              <div className="section-divider">
-                <div className="divider-ornament">❧</div>
-                <div className="divider-line"/>
-                <div className="divider-label">Flow Diagram</div>
-                <div className="divider-line"/>
-                <div className="divider-ornament">❧</div>
+                {/* DIAGRAM PANEL */}
+                <div
+                  className="result-panel"
+                  data-tab="diagram"
+                  ref={flowCardRef}
+                >
+                  <div className="panel-hdr">
+                    <div className="panel-label">Visual Flow Diagram</div>
+                    <div className="panel-actions">
+                      <span style={{fontFamily:"'DM Mono',monospace",fontSize:"8px",letterSpacing:"2px",textTransform:"uppercase",color:"var(--bd)"}}>Interactive</span>
+                      <button className="dl-btn dl-jpg" disabled={dlBusy==="diag-jpg"} onClick={dlDiagramJpg}>
+                        {dlBusy==="diag-jpg"?"Exporting…":"🖼 JPG"}
+                      </button>
+                      <button className="dl-btn dl-svg" onClick={dlDiagramSvg}>◈ SVG</button>
+                    </div>
+                  </div>
+                  <div className="diagram-panel-body">
+                    <FlowEditor nodes={flowNodes} edges={flowEdges} onChange={(n,e)=>{setFlowNodes(n);setFlowEdges(e);}} />
+                  </div>
+                </div>
+
               </div>
-
-              {/* DIAGRAM section */}
-              <section className="result-section" ref={flowCardRef}>
-                <div className="section-hdr">
-                  <div className="section-label">Visual Flow Diagram</div>
-                  <div className="section-actions">
-                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:"8px",letterSpacing:"2px",textTransform:"uppercase",color:"var(--bd)"}}>Interactive Editor</span>
-                    <button className="dl-btn dl-jpg" disabled={dlBusy==="diag-jpg"} onClick={dlDiagramJpg}>
-                      {dlBusy==="diag-jpg"?"Exporting…":"🖼 JPG"}
-                    </button>
-                    <button className="dl-btn dl-svg" onClick={dlDiagramSvg}>◈ SVG</button>
-                  </div>
-                </div>
-                <div className="diagram-body">
-                  <FlowEditor nodes={flowNodes} edges={flowEdges} onChange={(n,e)=>{setFlowNodes(n);setFlowEdges(e);}} />
-                </div>
-              </section>
 
               {dlError && <div className="dl-err">⚠ {dlError}</div>}
 
-              <div className="sep"/>
-              <button className="btn btn-ghost" onClick={reset}>✕ Begin a new analysis</button>
+              {/* Tab panel show/hide — inject style for tablet */}
+              <style>{`
+                @media(max-width:1024px) and (min-width:768px){
+                  .result-panel[data-tab="notes"]{ display: ${activeTab==="notes"?"flex":"none"}; }
+                  .result-panel[data-tab="diagram"]{ display: ${activeTab==="diagram"?"flex":"none"}; }
+                }
+              `}</style>
+
             </div>
           )}
 
           {/* ── FOOTER ── */}
-          <div className="footer">
-            <div className="footer-brand">Scrivly — Turn your handwriting into knowledge</div>
+          <footer className="footer">
+            <div className="footer-brand">InkParse — Turn your handwriting into knowledge</div>
             <div className="footer-meta">AI Powered · {currentYear}</div>
-          </div>
+          </footer>
 
         </div>
       </div>
