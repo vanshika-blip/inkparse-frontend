@@ -324,7 +324,7 @@ function FlowEditor({ nodes, edges, onChange }) {
       </div>
 
       {/* Canvas */}
-      <svg ref={svgRef} style={{flex:1,minHeight:400,display:"block",cursor:panningSt?"grabbing":connecting?"crosshair":"grab",background:"transparent",touchAction:"none"}}
+      <svg ref={svgRef} style={{flex:1,minHeight:500,display:"block",cursor:panningSt?"grabbing":connecting?"crosshair":"grab",background:"transparent",touchAction:"none"}}
         onMouseDown={onSvgMD} onMouseMove={onMM} onMouseUp={onMU} onWheel={onWheel}
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         <defs>
@@ -392,6 +392,7 @@ export default function App() {
   const [dlBusy, setDlBusy]       = useState("");
 
   const fileRef      = useRef();
+  const cameraRef    = useRef();
   const notesCardRef = useRef();
   const flowCardRef  = useRef();
 
@@ -531,10 +532,10 @@ export default function App() {
           opacity:0.6}
 
         .app{min-height:100vh;position:relative;z-index:1}
-        .wrap{max-width:1120px;margin:0 auto;padding:52px 28px 100px}
+        .wrap{width:100%;padding:40px 48px 100px}
 
         /* ── HEADER ── */
-        .hdr{margin-bottom:52px;border-bottom:1px solid var(--border2);padding-bottom:28px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px}
+        .hdr{margin-bottom:44px;border-bottom:1px solid var(--border2);padding-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
         .hdr-brand{display:flex;align-items:center;gap:14px}
         .hdr-icon{font-size:28px}
         .brand-name{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--ink);letter-spacing:-0.5px}
@@ -578,16 +579,16 @@ export default function App() {
         .err{background:rgba(139,58,42,0.06);border:1px solid rgba(139,58,42,0.2);border-radius:8px;padding:12px 16px;color:var(--red);font-size:12px;margin-top:14px;font-family:'DM Mono',monospace;white-space:pre-wrap}
 
         /* ── RESULT ── */
-        .res-hdr{margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-bottom:20px;border-bottom:1px solid var(--border2)}
+        .res-hdr{margin-bottom:32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-bottom:22px;border-bottom:1px solid var(--border2)}
         .res-eyebrow{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px}
         .res-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--ink);font-style:italic;line-height:1.1}
 
         /* ── TWO COL ── */
-        .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px}
+        .two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:16px;align-items:stretch}
         @media(max-width:760px){.two-col{grid-template-columns:1fr}}
 
         /* ── CARD ── */
-        .card{background:var(--surface);border:1px solid var(--border2);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 16px rgba(0,0,0,0.05)}
+        .card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 4px 24px rgba(44,24,16,0.07);height:100%}
         .card-head{background:var(--bg2);border-bottom:1px solid var(--border2);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
         .card-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3)}
         .toggle-group{display:flex;gap:2px;background:var(--border2);border-radius:6px;padding:2px}
@@ -595,8 +596,8 @@ export default function App() {
         .toggle-btn.active{background:var(--ink);color:var(--bg)}
 
         /* ── NOTES ── */
-        .notes-ta{width:100%;min-height:440px;background:transparent;border:none;outline:none;padding:22px;color:var(--ink2);font-family:'DM Mono',monospace;font-size:12px;line-height:1.8;resize:vertical;flex:1}
-        .notes-prev{padding:24px 28px;min-height:440px;overflow:auto;flex:1}
+        .notes-ta{width:100%;min-height:560px;background:transparent;border:none;outline:none;padding:24px;color:var(--ink2);font-family:'DM Mono',monospace;font-size:12px;line-height:1.8;resize:vertical;flex:1}
+        .notes-prev{padding:28px 32px;min-height:560px;overflow:auto;flex:1}
 
         .nc h1{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--ink);margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border2);font-style:italic}
         .nc h2{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--ink2);margin:20px 0 8px;font-style:italic}
@@ -658,6 +659,17 @@ export default function App() {
         .footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--border2);text-align:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
         .footer em{font-style:italic;font-family:'Lora',serif;color:var(--ink3);letter-spacing:0;font-size:11px}
 
+        /* ── UPLOAD / CAMERA BUTTONS ── */
+        .upload-btns{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
+        .upload-opt{flex:1;min-width:140px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:18px 16px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface);cursor:pointer;transition:all .2s;text-align:center}
+        .upload-opt:hover{border-color:var(--accent);background:#fdf8f0;transform:translateY(-2px);box-shadow:0 6px 20px rgba(139,94,60,0.1)}
+        .upload-opt-camera{border-color:rgba(74,90,138,0.3);background:rgba(74,90,138,0.03)}
+        .upload-opt-camera:hover{border-color:#4a5a8a;background:rgba(74,90,138,0.06);box-shadow:0 6px 20px rgba(74,90,138,0.1)}
+        .upload-opt-icon{font-size:28px;line-height:1}
+        .upload-opt-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink);font-weight:500;margin-top:4px}
+        .upload-opt-sub{font-family:'Lora',serif;font-size:11px;color:var(--ink3);font-style:italic}
+        .upload-divider{font-family:'Lora',serif;font-size:12px;color:var(--muted);font-style:italic;padding:0 4px;flex-shrink:0}
+
         /* ── UPLOAD HERO LAYOUT ── */
         .upload-layout{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;min-height:70vh;padding:20px 0}
         .upload-left{display:flex;flex-direction:column;gap:0}
@@ -672,6 +684,7 @@ export default function App() {
 
         /* ── RESPONSIVE: TABLET (max 900px) ── */
         @media(max-width:900px){
+          .wrap{padding:32px 28px 80px}
           .upload-layout{grid-template-columns:1fr;gap:40px;min-height:auto;padding:0}
           .hero-desc{font-size:14px;margin-bottom:24px}
           .upload-right .drop{min-height:240px}
@@ -688,9 +701,13 @@ export default function App() {
 
         /* ── RESPONSIVE: MOBILE (max 600px) ── */
         @media(max-width:600px){
+          .wrap{padding:16px 16px 60px}
           .upload-layout{grid-template-columns:1fr;gap:28px;min-height:auto}
           .hero-desc{font-size:13px;margin-bottom:18px}
           .hero-features{display:none}
+          .upload-btns{flex-direction:column;gap:8px}
+          .upload-opt{width:100%;flex-direction:row;justify-content:center;gap:12px;padding:14px 16px}
+          .upload-divider{display:none}
           .upload-right .drop{min-height:200px}
           .wrap{padding:20px 14px 60px}
           .hdr{margin-bottom:24px;padding-bottom:16px;flex-direction:row;align-items:center}
@@ -738,7 +755,7 @@ export default function App() {
 
           /* Diagram canvas — touch friendly height */
           .card[style*="minHeight"]{min-height:340px!important}
-          svg{min-height:300px!important;touch-action:none}
+          svg{min-height:300px!important;touch-action:none;flex:1}
 
           /* Result header */
           .res-hdr{flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:18px;padding-bottom:14px}
@@ -775,12 +792,11 @@ export default function App() {
           .fe-btn:hover{background:transparent;border-color:var(--border);color:var(--ink2)}
         }
 
-        /* ── LARGE SCREENS (min 1200px) ── */
-        @media(min-width:1200px){
-          .wrap{padding:60px 40px 120px}
-          .two-col{gap:28px}
-          .notes-prev,.notes-ta{min-height:500px}
-          .card[style*="minHeight"]{min-height:580px!important}
+        /* ── LARGE SCREENS (min 1400px) ── */
+        @media(min-width:1400px){
+          .wrap{padding:52px 80px 120px}
+          .two-col{gap:32px}
+          .notes-prev,.notes-ta{min-height:620px}
         }
       `}</style>
 
@@ -820,15 +836,33 @@ export default function App() {
               {/* RIGHT — upload box */}
               <div className="upload-right">
                 {!image ? (
-                  <div className={`drop ${dragOver?"over":""}`}
-                    onDragOver={e=>{e.preventDefault();setDragOver(true)}}
-                    onDragLeave={()=>setDragOver(false)}
-                    onDrop={handleDrop}
-                    onClick={()=>fileRef.current.click()}>
-                    <span className="drop-icon">📓</span>
-                    <div className="drop-title">Drop your handwritten notes</div>
-                    <div className="drop-sub" style={{marginTop:6}}>Any photo · any handwriting · any angle</div>
-                    <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])} />
+                  <div>
+                    <div className={`drop ${dragOver?"over":""}`}
+                      onDragOver={e=>{e.preventDefault();setDragOver(true)}}
+                      onDragLeave={()=>setDragOver(false)}
+                      onDrop={handleDrop}
+                      onClick={()=>fileRef.current.click()}>
+                      <span className="drop-icon">📓</span>
+                      <div className="drop-title">Drop or browse a photo</div>
+                      <div className="drop-sub" style={{marginTop:6}}>Any photo · any handwriting · any angle</div>
+                      <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])} />
+                    </div>
+
+                    {/* Upload / Camera buttons */}
+                    <div className="upload-btns">
+                      <button className="upload-opt" onClick={()=>fileRef.current.click()}>
+                        <span className="upload-opt-icon">🖼</span>
+                        <span className="upload-opt-label">Upload Photo</span>
+                        <span className="upload-opt-sub">from your device</span>
+                      </button>
+                      <div className="upload-divider">or</div>
+                      <button className="upload-opt upload-opt-camera" onClick={()=>cameraRef.current.click()}>
+                        <span className="upload-opt-icon">📷</span>
+                        <span className="upload-opt-label">Take a Photo</span>
+                        <span className="upload-opt-sub">open camera now</span>
+                      </button>
+                      <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])} />
+                    </div>
                   </div>
                 ) : (
                   <div>
@@ -885,7 +919,7 @@ export default function App() {
                 </div>
 
                 {/* DIAGRAM */}
-                <div className="card" ref={flowCardRef} style={{minHeight:520}}>
+                <div className="card" ref={flowCardRef} style={{minHeight:"calc(100vh - 280px)"}}>                
                   <div className="card-head">
                     <span className="card-label">◈ Flow Diagram</span>
                     <span style={{fontFamily:"'DM Mono',monospace",fontSize:7,color:"var(--muted)",letterSpacing:2,textTransform:"uppercase"}}>Interactive Editor</span>
