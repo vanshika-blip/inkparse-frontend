@@ -324,7 +324,7 @@ function FlowEditor({ nodes, edges, onChange }) {
         <button className="fe-btn" onClick={()=>{setZoom(0.9);setPan({x:40,y:20});}}>⊡ Reset</button>
       </div>
 
-      <svg ref={svgRef} style={{flex:1,minHeight:400,display:"block",cursor:panningSt?"grabbing":connecting?"crosshair":"grab",background:"transparent",touchAction:"none"}}
+      <svg ref={svgRef} style={{flex:1,minHeight:0,display:"block",cursor:panningSt?"grabbing":connecting?"crosshair":"grab",background:"transparent",touchAction:"none"}}
         onMouseDown={onSvgMD} onMouseMove={onMM} onMouseUp={onMU} onWheel={onWheel}
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         <defs>
@@ -398,7 +398,6 @@ export default function App() {
   const [title, setTitle]         = useState("");
   const [notes, setNotes]         = useState("");
   const [notesMode, setNotesMode] = useState("preview");
-  // "notes" | "diagram" — used for tablet tab switching
   const [activeTab, setActiveTab] = useState("notes");
   const [flowNodes, setFlowNodes] = useState({});
   const [flowEdges, setFlowEdges] = useState([]);
@@ -542,6 +541,7 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@300;400;500&display=swap');
 
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html,body,#root{height:100%}
         html{scroll-behavior:smooth;font-size:16px}
 
         :root{
@@ -582,9 +582,15 @@ export default function App() {
           background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
         }
 
-        .app{min-height:100vh;position:relative;z-index:1;display:flex;flex-direction:column}
+        .app{
+          height:100%;
+          position:relative;
+          z-index:1;
+          display:flex;
+          flex-direction:column;
+        }
 
-        /* ── TOPNAV (always visible, fixed) ── */
+        /* ── TOPNAV ── */
         .topnav{
           position:fixed;top:0;left:0;right:0;z-index:100;
           height:var(--nav-h);
@@ -594,6 +600,7 @@ export default function App() {
           border-bottom:1px solid var(--bd-l);
           display:flex;align-items:center;justify-content:space-between;
           padding:0 48px;
+          flex-shrink:0;
         }
         .topnav-brand{display:flex;align-items:center;gap:14px}
         .topnav-emblem{
@@ -620,12 +627,13 @@ export default function App() {
           letter-spacing:2.5px;text-transform:uppercase;color:var(--ink-4);
         }
 
-        /* page body below fixed nav */
+        /* Page body below fixed nav */
         .page-body{
           margin-top:var(--nav-h);
           flex:1;
           display:flex;
           flex-direction:column;
+          min-height:0;
         }
 
         /* ── REVEAL ── */
@@ -672,7 +680,6 @@ export default function App() {
           margin-bottom:36px;max-width:420px;
         }
 
-        /* Feature pills — visible on desktop & tablet (condensed) */
         .hero-features{display:flex;flex-direction:column;gap:0}
         .feat{
           font-family:'DM Mono',monospace;font-size:9px;
@@ -683,7 +690,6 @@ export default function App() {
         .feat:first-child{border-top:1px solid var(--bd-l)}
         .feat-dot{width:6px;height:6px;border-radius:50%;background:var(--acc);flex-shrink:0}
 
-        /* Condensed feature grid for tablet */
         .hero-features-grid{
           display:none;
           grid-template-columns:1fr 1fr;
@@ -711,7 +717,7 @@ export default function App() {
         .drop-sub{font-family:'EB Garamond',serif;font-size:14px;font-style:italic;color:var(--ink-3);}
         .drop-hint{margin-top:14px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--bd);}
 
-        /* ── UPLOAD OPTION BUTTONS — two equal side-by-side ── */
+        /* ── UPLOAD OPTION BUTTONS ── */
         .upload-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
         .upload-opt{
           display:flex;flex-direction:row;align-items:center;gap:14px;
@@ -723,7 +729,6 @@ export default function App() {
         .upload-opt-icon{font-size:22px;line-height:1;flex-shrink:0;}
         .upload-opt-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-1);font-weight:500;}
         .upload-opt-sub{font-family:'EB Garamond',serif;font-size:12px;color:var(--ink-3);font-style:italic;margin-top:2px;}
-        .upload-or{display:none;}
 
         /* ── IMAGE PREVIEW ── */
         .img-prev{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--bd-l);margin-bottom:16px;position:relative;box-shadow:var(--shadow);}
@@ -758,19 +763,22 @@ export default function App() {
         .err-box::before{content:'⚠  ';opacity:.7}
 
         /* ═══════════════════════════════════════════════════════
-           RESULT LAYOUT
-           Desktop (≥1025px): true full-height side-by-side split
-           Tablet (768–1024px): tabs
-           Mobile (<768px): stacked
+           RESULT LAYOUT — STABLE & VIEWPORT-PERFECT
         ═══════════════════════════════════════════════════════ */
 
         .result-page{
-          display:flex;flex-direction:column;
+          display:flex;
+          flex-direction:column;
           flex:1;
+          min-height:0;
+          /* Fills the remaining height of .page-body */
+          height:calc(100vh - var(--nav-h));
+          overflow:hidden;
         }
 
         /* Sticky result topbar */
         .res-topbar{
+          flex-shrink:0;
           position:sticky;
           top:var(--nav-h);
           z-index:90;
@@ -785,45 +793,33 @@ export default function App() {
         .res-eyebrow{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--ink-4);margin-bottom:3px;}
         .res-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;font-style:italic;color:var(--ink-0);line-height:1.1;}
 
-        /* Tablet tab bar */
-        .tab-bar{
-          display:none;
-          border-bottom:1px solid var(--bd-l);
-          background:var(--parch-1);
-          padding:0 32px;
-        }
-        .tab-btn{
-          font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;
-          padding:14px 20px;border:none;background:transparent;cursor:pointer;
-          color:var(--ink-4);border-bottom:2px solid transparent;
-          transition:all .2s;margin-bottom:-1px;
-        }
-        .tab-btn.active{color:var(--acc);border-bottom-color:var(--acc);}
-
-        /* Desktop: two stacked full-width sections, each ~50vh */
+        /* True full-height split — flex children fill remaining space */
         .result-split{
+          flex:1;
           display:flex;
           flex-direction:column;
+          min-height:0;
+          overflow:hidden;
         }
 
+        /* Each panel takes exactly half */
         .result-panel{
+          flex:1;
           display:flex;
           flex-direction:column;
+          min-height:0;
           border-bottom:1px solid var(--bd-l);
-          /* Each panel takes roughly half the available viewport */
-          height:calc((100vh - var(--nav-h) - 56px) / 2);
           overflow:hidden;
         }
         .result-panel:last-child{border-bottom:none;}
 
-        /* Panel header */
+        /* Panel header — never shrinks */
         .panel-hdr{
+          flex-shrink:0;
           display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
           padding:12px 28px;
           background:var(--parch-1);
           border-bottom:1px solid var(--bd-l);
-          position:sticky;top:0;z-index:10;
-          flex-shrink:0;
         }
         .panel-label{
           font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--ink-3);
@@ -832,16 +828,30 @@ export default function App() {
         .panel-label::before{content:'';width:14px;height:1px;background:var(--acc);}
         .panel-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 
-        /* Notes content */
+        /* Notes panel body — scrollable */
+        .notes-panel-body{
+          flex:1;
+          min-height:0;
+          overflow:hidden;
+          display:flex;
+          flex-direction:column;
+        }
+
         .notes-ta-full{
-          width:100%;flex:1;
+          flex:1;
+          min-height:0;
           background:transparent;border:none;outline:none;
           padding:28px 36px;
           color:var(--ink-2);font-family:'DM Mono',monospace;font-size:13px;
           line-height:1.9;resize:none;
           overflow-y:auto;
         }
-        .notes-prev-full{padding:28px 36px;flex:1;overflow-y:auto;}
+        .notes-prev-full{
+          flex:1;
+          min-height:0;
+          padding:28px 36px;
+          overflow-y:auto;
+        }
 
         /* Rendered notes */
         .nc h1{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;font-style:italic;color:var(--ink-0);margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid var(--bd-l);}
@@ -874,15 +884,23 @@ export default function App() {
         .dl-svg{background:rgba(26,68,40,0.06);border:1px solid rgba(26,68,40,0.15);color:var(--green)}
         .dl-svg:hover:not(:disabled){background:rgba(26,68,40,0.1)}
 
-        /* Diagram panel body — fills remaining height inside the panel */
+        /* Diagram panel body — fills remaining height */
         .diagram-panel-body{
-          flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;
+          flex:1;
+          display:flex;
+          flex-direction:column;
+          min-height:0;
+          overflow:hidden;
         }
-        .diagram-panel-body > div{flex:1;display:flex;flex-direction:column;min-height:0;}
+        .diagram-panel-body > div{
+          flex:1;
+          display:flex;
+          flex-direction:column;
+          min-height:0;
+        }
 
         /* ── FLOW EDITOR ── */
         .fe-toolbar{display:flex;align-items:center;gap:6px;padding:10px 16px;background:var(--parch-1);border-bottom:1px solid var(--bd-l);flex-shrink:0;flex-wrap:wrap;min-height:48px;position:relative;}
-        /* scroll fade hint on mobile */
         .fe-toolbar::after{content:'';position:absolute;right:0;top:0;bottom:0;width:32px;background:linear-gradient(to right,transparent,var(--parch-1));pointer-events:none;display:none;}
         .fe-btn{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.5px;text-transform:uppercase;padding:6px 11px;border:1px solid var(--bd-l);background:var(--parch-0);color:var(--ink-2);border-radius:5px;cursor:pointer;transition:all .15s;white-space:nowrap;}
         .fe-btn:hover{background:var(--parch-1);border-color:var(--acc);color:var(--acc)}
@@ -915,7 +933,7 @@ export default function App() {
 
         /* ── FOOTER ── */
         .dl-err{background:rgba(122,32,16,0.05);border:1px solid rgba(122,32,16,0.15);border-radius:var(--r);padding:10px 14px;color:var(--red);font-size:12px;margin:12px 48px;font-family:'DM Mono',monospace;}
-        .footer{padding:20px 48px;border-top:1px solid var(--bd-l);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:auto;}
+        .footer{padding:20px 48px;border-top:1px solid var(--bd-l);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;flex-shrink:0;}
         .footer-brand{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:var(--ink-3);}
         .footer-meta{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:var(--bd);}
 
@@ -942,12 +960,29 @@ export default function App() {
           .hero-features{display:none;}
           .hero-features-grid{display:grid;}
 
-          /* Results: on tablet, keep stacked but reduce panel height */
-          .result-split{height:auto;}
-          .tab-bar{display:none;}
-          .res-topbar{padding:12px 32px;}
-          .result-panel{height:auto;overflow:visible;}
+          /* On tablet, allow natural stacking — no fixed heights */
+          .result-page{
+            height:auto;
+            overflow:visible;
+          }
+          .result-split{
+            flex:none;
+            overflow:visible;
+          }
+          .result-panel{
+            flex:none;
+            height:auto;
+            overflow:visible;
+            min-height:420px;
+          }
+          .notes-ta-full,.notes-prev-full{
+            min-height:360px;
+          }
+          .diagram-panel-body{
+            min-height:420px;
+          }
 
+          .res-topbar{padding:12px 32px;}
           .panel-hdr{padding:12px 24px;}
           .notes-ta-full,.notes-prev-full{padding:28px 28px;}
         }
@@ -973,26 +1008,43 @@ export default function App() {
           .drop-title{font-size:18px;}
           .drop-hint{display:none;}
 
-          /* Upload option buttons — stack to single column on small screens */
           .upload-btns{grid-template-columns:1fr;}
           .upload-opt{padding:14px 16px;}
           .upload-opt-icon{font-size:22px;}
           .img-prev img{max-height:200px;}
           .btn-primary{padding:16px;font-size:10px;margin-top:14px!important;}
 
-          /* Results: pure stacked */
-          .tab-bar{display:none;}
+          /* Mobile: fully natural stacking */
+          .result-page{
+            height:auto;
+            overflow:visible;
+          }
+          .result-split{
+            flex:none;
+            overflow:visible;
+          }
+          .result-panel{
+            flex:none;
+            height:auto;
+            overflow:visible;
+            min-height:360px;
+          }
+          .notes-ta-full,.notes-prev-full{
+            min-height:320px;
+          }
+          .diagram-panel-body{
+            min-height:380px;
+          }
+
           .res-topbar{padding:10px 18px;}
           .res-title{font-size:18px;}
-          .result-panel{height:auto;overflow:visible;}
 
           .panel-hdr{padding:10px 16px;flex-direction:column;align-items:flex-start;gap:8px;}
           .panel-actions{width:100%;overflow-x:auto;flex-wrap:nowrap;gap:6px;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
           .dl-btn{flex-shrink:0;}
 
-          .notes-ta-full,.notes-prev-full{padding:20px 18px;min-height:340px;}
+          .notes-ta-full,.notes-prev-full{padding:20px 18px;}
 
-          /* Toolbar scroll on mobile + fade hint */
           .fe-toolbar{overflow-x:auto;flex-wrap:nowrap;padding:8px 12px;gap:5px;-webkit-overflow-scrolling:touch;}
           .fe-toolbar::after{display:block;}
           .fe-btn{flex-shrink:0;}
@@ -1005,7 +1057,6 @@ export default function App() {
 
         /* ── SMALL PHONE ── */
         @media(max-width:380px){
-          .upload-wrap{padding:20px 14px 50px;}
           h1{font-size:26px;}
           .drop{padding:34px 16px;}
         }
@@ -1013,7 +1064,6 @@ export default function App() {
         /* ── LARGE SCREENS (≥1280px) ── */
         @media(min-width:1280px){
           .topnav{padding:0 64px;}
-          .upload-wrap{padding:72px 64px 120px;max-width:1280px;}
           .res-topbar{padding:14px 64px;}
           .panel-hdr{padding:14px 40px;}
           .notes-ta-full,.notes-prev-full{padding:40px 56px;}
@@ -1064,7 +1114,6 @@ export default function App() {
                   flow diagram. Professional results in seconds.
                 </p>
 
-                {/* Desktop: vertical feature list */}
                 <div className="hero-features">
                   <div className="feat"><span className="feat-dot"/>Recognises any handwriting style</div>
                   <div className="feat"><span className="feat-dot"/>Automatic flowchart generation</div>
@@ -1072,7 +1121,6 @@ export default function App() {
                   <div className="feat"><span className="feat-dot"/>Fully interactive diagram editor</div>
                 </div>
 
-                {/* Tablet: condensed 2-column grid */}
                 <div className="hero-features-grid">
                   <div className="feat-grid-item"><span className="feat-dot"/>Any handwriting style</div>
                   <div className="feat-grid-item"><span className="feat-dot"/>Auto flowchart</div>
@@ -1157,22 +1205,13 @@ export default function App() {
                   <div className="res-eyebrow">Structured from handwriting</div>
                   <div className="res-title">{title}</div>
                 </div>
-                {/* "New image" button visible in topbar on desktop only — on mobile it's in topnav */}
-                <button className="btn btn-ghost" onClick={reset} style={{display:"none"}}>↩ New image</button>
               </div>
 
-              {/* Desktop & all: two stacked full-width sections */}
+              {/* Two stacked full-height panels */}
               <div className="result-split">
 
                 {/* NOTES PANEL */}
-                <div
-                  className="result-panel"
-                  data-tab="notes"
-                  ref={notesCardRef}
-                  style={{
-                    // On tablet/mobile, hide the inactive tab panel via JS
-                  }}
-                >
+                <div className="result-panel" ref={notesCardRef}>
                   <div className="panel-hdr">
                     <div className="panel-label">Extracted Notes</div>
                     <div className="panel-actions">
@@ -1188,7 +1227,7 @@ export default function App() {
                       </button>
                     </div>
                   </div>
-                  <div style={{display:"flex",flexDirection:"column",flex:1}}>
+                  <div className="notes-panel-body">
                     {notesMode==="edit"
                       ? <textarea className="notes-ta-full" value={notes} onChange={e=>setNotes(e.target.value)} spellCheck={false} placeholder="Your extracted notes will appear here…"/>
                       : <div className="notes-prev-full nc" dangerouslySetInnerHTML={{__html:mdToHtml(notes)}}/>
@@ -1197,11 +1236,7 @@ export default function App() {
                 </div>
 
                 {/* DIAGRAM PANEL */}
-                <div
-                  className="result-panel"
-                  data-tab="diagram"
-                  ref={flowCardRef}
-                >
+                <div className="result-panel" ref={flowCardRef}>
                   <div className="panel-hdr">
                     <div className="panel-label">Visual Flow Diagram</div>
                     <div className="panel-actions">
@@ -1220,8 +1255,6 @@ export default function App() {
               </div>
 
               {dlError && <div className="dl-err">⚠ {dlError}</div>}
-
-
 
             </div>
           )}
