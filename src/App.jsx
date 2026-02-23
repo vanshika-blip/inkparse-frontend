@@ -451,7 +451,7 @@ export default function App() {
     if (!images.length) return;
     setLoading(true); setError(""); setDlError(""); setLoadPct(0);
     const msgs = [
-      [0, images.length>1?"Transmitting images…":"Transmitting image…"],
+      [0,  images.length > 1 ? `Sending ${images.length} images…` : "Transmitting image…"],
       [20, "Interpreting handwriting…"],
       [55, "Structuring content…"],
       [78, "Generating flow diagram…"],
@@ -462,28 +462,30 @@ export default function App() {
       if (mi < msgs.length) { setLoadMsg(msgs[mi][1]); setLoadPct(msgs[mi][0]); mi++; }
     }, 900);
     try {
-      // Send all images; backend receives array (falls back to first if single)
+      // Send all images in ONE request — backend handles multi-image
       const payload = images.length === 1
         ? { imageBase64: images[0].b64, imageMime: images[0].mime }
-        : { images: images.map(i=>({imageBase64:i.b64,imageMime:i.mime})) };
+        : { images: images.map(i => ({ imageBase64: i.b64, imageMime: i.mime })) };
+
       const res = await fetch(`${BACKEND_URL}/api/analyze`, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(payload)
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
       clearInterval(tick); setLoadPct(96); setLoadMsg("Processing response…");
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error||`Error ${res.status}`);
-      setTitle(data.title||"Notes");
-      setNotes(data.notes||"");
-      const code=(data.mermaidCode||"flowchart TD\n  A([Start]) --> B[Content]").replace(/```[\w]*\n?/g,"").trim();
-      const {nodes:n,edges:e}=parseMermaidToGraph(code);
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+
+      setTitle(data.title || "Notes");
+      setNotes(data.notes || "");
+      const code = (data.mermaidCode || "flowchart TD\n  A([Start]) --> B[Content]").replace(/\`\`\`[\w]*\n?/g,"").trim();
+      const {nodes:n, edges:e} = parseMermaidToGraph(code);
       setFlowNodes(n); setFlowEdges(e);
       setLoadPct(100);
       setActiveTab("notes");
       setTimeout(() => setStep("result"), 300);
     } catch(e) {
       clearInterval(tick);
-      setError(e.message.includes("fetch")||e.message.includes("Failed")
+      setError(e.message.includes("fetch") || e.message.includes("Failed")
         ? "Unable to reach the server. Please ensure the backend service is running."
         : e.message);
     }
