@@ -324,7 +324,7 @@ function FlowEditor({ nodes, edges, onChange }) {
         <button className="fe-btn" onClick={()=>{setZoom(0.9);setPan({x:40,y:20});}}>⊡ Reset</button>
       </div>
 
-      <svg ref={svgRef} style={{flex:1,minHeight:0,display:"block",cursor:panningSt?"grabbing":connecting?"crosshair":"grab",background:"transparent",touchAction:"none"}}
+      <svg ref={svgRef} style={{flex:1,minHeight:400,display:"block",cursor:panningSt?"grabbing":connecting?"crosshair":"grab",background:"transparent",touchAction:"none"}}
         onMouseDown={onSvgMD} onMouseMove={onMM} onMouseUp={onMU} onWheel={onWheel}
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         <defs>
@@ -386,9 +386,7 @@ function LoadingDots() {
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [image, setImage]         = useState(null);
-  const [imageB64, setImageB64]   = useState(null);
-  const [imageMime, setImageMime] = useState("image/jpeg");
+  const [images, setImages]       = useState([]); // [{src, b64, mime, name}]
   const [step, setStep]           = useState("upload");
   const [loading, setLoading]     = useState(false);
   const [loadMsg, setLoadMsg]     = useState("");
@@ -398,6 +396,7 @@ export default function App() {
   const [title, setTitle]         = useState("");
   const [notes, setNotes]         = useState("");
   const [notesMode, setNotesMode] = useState("preview");
+  // "notes" | "diagram" — used for tablet tab switching
   const [activeTab, setActiveTab] = useState("notes");
   const [flowNodes, setFlowNodes] = useState({});
   const [flowEdges, setFlowEdges] = useState([]);
@@ -417,21 +416,42 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  const handleFile = file => {
-    if (!file||!file.type.startsWith("image/")) return;
-    setImageMime(file.type||"image/jpeg");
-    const r=new FileReader();
-    r.onload=e=>{setImage(e.target.result);setImageB64(e.target.result.split(",")[1]);};
+  const readImageFile = file => new Promise(resolve => {
+    if (!file||!file.type.startsWith("image/")) return resolve(null);
+    const r = new FileReader();
+    r.onload = e => resolve({
+      src: e.target.result,
+      b64: e.target.result.split(",")[1],
+      mime: file.type||"image/jpeg",
+      name: file.name||"image"
+    });
     r.readAsDataURL(file);
-  };
+  });
 
-  const handleDrop = useCallback(e=>{e.preventDefault();setDragOver(false);handleFile(e.dataTransfer.files[0]);}, []);
+  const handleFiles = useCallback(async fileList => {
+    const files = Array.from(fileList).filter(f=>f.type.startsWith("image/"));
+    if (!files.length) return;
+    const read = await Promise.all(files.map(readImageFile));
+    const valid = read.filter(Boolean);
+    setImages(prev => {
+      const existing = new Set(prev.map(i=>i.name+i.src.slice(-20)));
+      const fresh = valid.filter(i=>!existing.has(i.name+i.src.slice(-20)));
+      return [...prev, ...fresh];
+    });
+  }, []);
+
+  const handleDrop = useCallback(e=>{
+    e.preventDefault();setDragOver(false);
+    handleFiles(e.dataTransfer.files);
+  }, [handleFiles]);
+
+  const removeImage = idx => setImages(prev => prev.filter((_,i)=>i!==idx));
 
   const analyze = async () => {
-    if (!imageB64) return;
+    if (!images.length) return;
     setLoading(true); setError(""); setDlError(""); setLoadPct(0);
     const msgs = [
-      [0, "Transmitting image…"],
+      [0, images.length>1?"Transmitting images…":"Transmitting image…"],
       [20, "Interpreting handwriting…"],
       [55, "Structuring content…"],
       [78, "Generating flow diagram…"],
@@ -442,9 +462,13 @@ export default function App() {
       if (mi < msgs.length) { setLoadMsg(msgs[mi][1]); setLoadPct(msgs[mi][0]); mi++; }
     }, 900);
     try {
+      // Send all images; backend receives array (falls back to first if single)
+      const payload = images.length === 1
+        ? { imageBase64: images[0].b64, imageMime: images[0].mime }
+        : { images: images.map(i=>({imageBase64:i.b64,imageMime:i.mime})) };
       const res = await fetch(`${BACKEND_URL}/api/analyze`, {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({imageBase64:imageB64,imageMime})
+        body:JSON.stringify(payload)
       });
       clearInterval(tick); setLoadPct(96); setLoadMsg("Processing response…");
       const data = await res.json();
@@ -528,7 +552,7 @@ export default function App() {
   };
 
   const reset = () => {
-    setImage(null);setImageB64(null);setStep("upload");
+    setImages([]);setStep("upload");
     setNotes("");setFlowNodes({});setFlowEdges([]);
     setError("");setDlError("");setTitle("");setLoadPct(0);
   };
@@ -541,7 +565,6 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@300;400;500&display=swap');
 
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        html,body,#root{height:100%}
         html{scroll-behavior:smooth;font-size:16px}
 
         :root{
@@ -582,15 +605,9 @@ export default function App() {
           background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
         }
 
-        .app{
-          height:100%;
-          position:relative;
-          z-index:1;
-          display:flex;
-          flex-direction:column;
-        }
+        .app{min-height:100vh;position:relative;z-index:1;display:flex;flex-direction:column}
 
-        /* ── TOPNAV ── */
+        /* ── TOPNAV (always visible, fixed) ── */
         .topnav{
           position:fixed;top:0;left:0;right:0;z-index:100;
           height:var(--nav-h);
@@ -600,7 +617,6 @@ export default function App() {
           border-bottom:1px solid var(--bd-l);
           display:flex;align-items:center;justify-content:space-between;
           padding:0 48px;
-          flex-shrink:0;
         }
         .topnav-brand{display:flex;align-items:center;gap:14px}
         .topnav-emblem{
@@ -627,13 +643,12 @@ export default function App() {
           letter-spacing:2.5px;text-transform:uppercase;color:var(--ink-4);
         }
 
-        /* Page body below fixed nav */
+        /* page body below fixed nav */
         .page-body{
           margin-top:var(--nav-h);
           flex:1;
           display:flex;
           flex-direction:column;
-          min-height:0;
         }
 
         /* ── REVEAL ── */
@@ -680,6 +695,7 @@ export default function App() {
           margin-bottom:36px;max-width:420px;
         }
 
+        /* Feature pills — visible on desktop & tablet (condensed) */
         .hero-features{display:flex;flex-direction:column;gap:0}
         .feat{
           font-family:'DM Mono',monospace;font-size:9px;
@@ -690,6 +706,7 @@ export default function App() {
         .feat:first-child{border-top:1px solid var(--bd-l)}
         .feat-dot{width:6px;height:6px;border-radius:50%;background:var(--acc);flex-shrink:0}
 
+        /* Condensed feature grid for tablet */
         .hero-features-grid{
           display:none;
           grid-template-columns:1fr 1fr;
@@ -717,7 +734,7 @@ export default function App() {
         .drop-sub{font-family:'EB Garamond',serif;font-size:14px;font-style:italic;color:var(--ink-3);}
         .drop-hint{margin-top:14px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--bd);}
 
-        /* ── UPLOAD OPTION BUTTONS ── */
+        /* ── UPLOAD OPTION BUTTONS — two equal side-by-side ── */
         .upload-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
         .upload-opt{
           display:flex;flex-direction:row;align-items:center;gap:14px;
@@ -729,11 +746,58 @@ export default function App() {
         .upload-opt-icon{font-size:22px;line-height:1;flex-shrink:0;}
         .upload-opt-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-1);font-weight:500;}
         .upload-opt-sub{font-family:'EB Garamond',serif;font-size:12px;color:var(--ink-3);font-style:italic;margin-top:2px;}
+        .upload-or{display:none;}
 
         /* ── IMAGE PREVIEW ── */
         .img-prev{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--bd-l);margin-bottom:16px;position:relative;box-shadow:var(--shadow);}
         .img-prev img{width:100%;max-height:260px;object-fit:contain;background:var(--parch-1);display:block}
         .img-badge{position:absolute;top:12px;left:12px;background:var(--ink-0);color:var(--parch-0);font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;padding:4px 12px;border-radius:100px;text-transform:uppercase;}
+
+        /* ── IMAGE THUMBNAIL GRID ── */
+        .drop-compact{
+          min-height:110px !important;
+          padding:20px 24px !important;
+          flex-direction:row !important;
+          gap:12px;
+          justify-content:center;
+        }
+        .img-grid{
+          display:grid;
+          grid-template-columns:repeat(auto-fill,minmax(90px,1fr));
+          gap:10px;
+        }
+        .img-thumb{
+          position:relative;
+          border-radius:8px;
+          overflow:hidden;
+          border:1px solid var(--bd-l);
+          aspect-ratio:1;
+          background:var(--parch-1);
+          box-shadow:var(--shadow);
+          transition:transform .15s;
+        }
+        .img-thumb:hover{transform:scale(1.02);}
+        .img-thumb img{
+          width:100%;height:100%;
+          object-fit:cover;display:block;
+        }
+        .img-thumb-num{
+          position:absolute;bottom:5px;left:7px;
+          font-family:'DM Mono',monospace;font-size:9px;font-weight:500;
+          color:var(--parch-0);letter-spacing:1px;
+          text-shadow:0 1px 3px rgba(0,0,0,0.5);
+        }
+        .img-thumb-del{
+          position:absolute;top:5px;right:5px;
+          width:20px;height:20px;border-radius:50%;
+          border:none;cursor:pointer;
+          background:rgba(26,14,6,0.7);
+          color:var(--parch-0);
+          font-size:9px;line-height:1;
+          display:flex;align-items:center;justify-content:center;
+          opacity:0;transition:opacity .15s;
+        }
+        .img-thumb:hover .img-thumb-del{opacity:1;}
 
         /* ── BUTTONS ── */
         .btn{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:500;border:none;cursor:pointer;border-radius:var(--r);display:inline-flex;align-items:center;gap:8px;transition:all .2s;padding:11px 20px;white-space:nowrap;}
@@ -763,22 +827,19 @@ export default function App() {
         .err-box::before{content:'⚠  ';opacity:.7}
 
         /* ═══════════════════════════════════════════════════════
-           RESULT LAYOUT — STABLE & VIEWPORT-PERFECT
+           RESULT LAYOUT
+           Desktop (≥1025px): true full-height side-by-side split
+           Tablet (768–1024px): tabs
+           Mobile (<768px): stacked
         ═══════════════════════════════════════════════════════ */
 
         .result-page{
-          display:flex;
-          flex-direction:column;
+          display:flex;flex-direction:column;
           flex:1;
-          min-height:0;
-          /* Fills the remaining height of .page-body */
-          height:calc(100vh - var(--nav-h));
-          overflow:hidden;
         }
 
         /* Sticky result topbar */
         .res-topbar{
-          flex-shrink:0;
           position:sticky;
           top:var(--nav-h);
           z-index:90;
@@ -793,33 +854,45 @@ export default function App() {
         .res-eyebrow{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--ink-4);margin-bottom:3px;}
         .res-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;font-style:italic;color:var(--ink-0);line-height:1.1;}
 
-        /* True full-height split — flex children fill remaining space */
+        /* Tablet tab bar */
+        .tab-bar{
+          display:none;
+          border-bottom:1px solid var(--bd-l);
+          background:var(--parch-1);
+          padding:0 32px;
+        }
+        .tab-btn{
+          font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;
+          padding:14px 20px;border:none;background:transparent;cursor:pointer;
+          color:var(--ink-4);border-bottom:2px solid transparent;
+          transition:all .2s;margin-bottom:-1px;
+        }
+        .tab-btn.active{color:var(--acc);border-bottom-color:var(--acc);}
+
+        /* Desktop: two stacked full-width sections, each ~50vh */
         .result-split{
-          flex:1;
           display:flex;
           flex-direction:column;
-          min-height:0;
-          overflow:hidden;
         }
 
-        /* Each panel takes exactly half */
         .result-panel{
-          flex:1;
           display:flex;
           flex-direction:column;
-          min-height:0;
           border-bottom:1px solid var(--bd-l);
+          /* Each panel takes roughly half the available viewport */
+          height:calc((100vh - var(--nav-h) - 56px) / 2);
           overflow:hidden;
         }
         .result-panel:last-child{border-bottom:none;}
 
-        /* Panel header — never shrinks */
+        /* Panel header */
         .panel-hdr{
-          flex-shrink:0;
           display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
           padding:12px 28px;
           background:var(--parch-1);
           border-bottom:1px solid var(--bd-l);
+          position:sticky;top:0;z-index:10;
+          flex-shrink:0;
         }
         .panel-label{
           font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--ink-3);
@@ -828,30 +901,16 @@ export default function App() {
         .panel-label::before{content:'';width:14px;height:1px;background:var(--acc);}
         .panel-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 
-        /* Notes panel body — scrollable */
-        .notes-panel-body{
-          flex:1;
-          min-height:0;
-          overflow:hidden;
-          display:flex;
-          flex-direction:column;
-        }
-
+        /* Notes content */
         .notes-ta-full{
-          flex:1;
-          min-height:0;
+          width:100%;flex:1;
           background:transparent;border:none;outline:none;
           padding:28px 36px;
           color:var(--ink-2);font-family:'DM Mono',monospace;font-size:13px;
           line-height:1.9;resize:none;
           overflow-y:auto;
         }
-        .notes-prev-full{
-          flex:1;
-          min-height:0;
-          padding:28px 36px;
-          overflow-y:auto;
-        }
+        .notes-prev-full{padding:28px 36px;flex:1;overflow-y:auto;}
 
         /* Rendered notes */
         .nc h1{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;font-style:italic;color:var(--ink-0);margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid var(--bd-l);}
@@ -884,23 +943,15 @@ export default function App() {
         .dl-svg{background:rgba(26,68,40,0.06);border:1px solid rgba(26,68,40,0.15);color:var(--green)}
         .dl-svg:hover:not(:disabled){background:rgba(26,68,40,0.1)}
 
-        /* Diagram panel body — fills remaining height */
+        /* Diagram panel body — fills remaining height inside the panel */
         .diagram-panel-body{
-          flex:1;
-          display:flex;
-          flex-direction:column;
-          min-height:0;
-          overflow:hidden;
+          flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;
         }
-        .diagram-panel-body > div{
-          flex:1;
-          display:flex;
-          flex-direction:column;
-          min-height:0;
-        }
+        .diagram-panel-body > div{flex:1;display:flex;flex-direction:column;min-height:0;}
 
         /* ── FLOW EDITOR ── */
         .fe-toolbar{display:flex;align-items:center;gap:6px;padding:10px 16px;background:var(--parch-1);border-bottom:1px solid var(--bd-l);flex-shrink:0;flex-wrap:wrap;min-height:48px;position:relative;}
+        /* scroll fade hint on mobile */
         .fe-toolbar::after{content:'';position:absolute;right:0;top:0;bottom:0;width:32px;background:linear-gradient(to right,transparent,var(--parch-1));pointer-events:none;display:none;}
         .fe-btn{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.5px;text-transform:uppercase;padding:6px 11px;border:1px solid var(--bd-l);background:var(--parch-0);color:var(--ink-2);border-radius:5px;cursor:pointer;transition:all .15s;white-space:nowrap;}
         .fe-btn:hover{background:var(--parch-1);border-color:var(--acc);color:var(--acc)}
@@ -933,7 +984,7 @@ export default function App() {
 
         /* ── FOOTER ── */
         .dl-err{background:rgba(122,32,16,0.05);border:1px solid rgba(122,32,16,0.15);border-radius:var(--r);padding:10px 14px;color:var(--red);font-size:12px;margin:12px 48px;font-family:'DM Mono',monospace;}
-        .footer{padding:20px 48px;border-top:1px solid var(--bd-l);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;flex-shrink:0;}
+        .footer{padding:20px 48px;border-top:1px solid var(--bd-l);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:auto;}
         .footer-brand{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:var(--ink-3);}
         .footer-meta{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:var(--bd);}
 
@@ -960,29 +1011,12 @@ export default function App() {
           .hero-features{display:none;}
           .hero-features-grid{display:grid;}
 
-          /* On tablet, allow natural stacking — no fixed heights */
-          .result-page{
-            height:auto;
-            overflow:visible;
-          }
-          .result-split{
-            flex:none;
-            overflow:visible;
-          }
-          .result-panel{
-            flex:none;
-            height:auto;
-            overflow:visible;
-            min-height:420px;
-          }
-          .notes-ta-full,.notes-prev-full{
-            min-height:360px;
-          }
-          .diagram-panel-body{
-            min-height:420px;
-          }
-
+          /* Results: on tablet, keep stacked but reduce panel height */
+          .result-split{height:auto;}
+          .tab-bar{display:none;}
           .res-topbar{padding:12px 32px;}
+          .result-panel{height:auto;overflow:visible;}
+
           .panel-hdr{padding:12px 24px;}
           .notes-ta-full,.notes-prev-full{padding:28px 28px;}
         }
@@ -1008,43 +1042,26 @@ export default function App() {
           .drop-title{font-size:18px;}
           .drop-hint{display:none;}
 
+          /* Upload option buttons — stack to single column on small screens */
           .upload-btns{grid-template-columns:1fr;}
           .upload-opt{padding:14px 16px;}
           .upload-opt-icon{font-size:22px;}
           .img-prev img{max-height:200px;}
           .btn-primary{padding:16px;font-size:10px;margin-top:14px!important;}
 
-          /* Mobile: fully natural stacking */
-          .result-page{
-            height:auto;
-            overflow:visible;
-          }
-          .result-split{
-            flex:none;
-            overflow:visible;
-          }
-          .result-panel{
-            flex:none;
-            height:auto;
-            overflow:visible;
-            min-height:360px;
-          }
-          .notes-ta-full,.notes-prev-full{
-            min-height:320px;
-          }
-          .diagram-panel-body{
-            min-height:380px;
-          }
-
+          /* Results: pure stacked */
+          .tab-bar{display:none;}
           .res-topbar{padding:10px 18px;}
           .res-title{font-size:18px;}
+          .result-panel{height:auto;overflow:visible;}
 
           .panel-hdr{padding:10px 16px;flex-direction:column;align-items:flex-start;gap:8px;}
           .panel-actions{width:100%;overflow-x:auto;flex-wrap:nowrap;gap:6px;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
           .dl-btn{flex-shrink:0;}
 
-          .notes-ta-full,.notes-prev-full{padding:20px 18px;}
+          .notes-ta-full,.notes-prev-full{padding:20px 18px;min-height:340px;}
 
+          /* Toolbar scroll on mobile + fade hint */
           .fe-toolbar{overflow-x:auto;flex-wrap:nowrap;padding:8px 12px;gap:5px;-webkit-overflow-scrolling:touch;}
           .fe-toolbar::after{display:block;}
           .fe-btn{flex-shrink:0;}
@@ -1057,6 +1074,7 @@ export default function App() {
 
         /* ── SMALL PHONE ── */
         @media(max-width:380px){
+          .upload-wrap{padding:20px 14px 50px;}
           h1{font-size:26px;}
           .drop{padding:34px 16px;}
         }
@@ -1064,6 +1082,7 @@ export default function App() {
         /* ── LARGE SCREENS (≥1280px) ── */
         @media(min-width:1280px){
           .topnav{padding:0 64px;}
+          .upload-wrap{padding:72px 64px 120px;max-width:1280px;}
           .res-topbar{padding:14px 64px;}
           .panel-hdr{padding:14px 40px;}
           .notes-ta-full,.notes-prev-full{padding:40px 56px;}
@@ -1114,6 +1133,7 @@ export default function App() {
                   flow diagram. Professional results in seconds.
                 </p>
 
+                {/* Desktop: vertical feature list */}
                 <div className="hero-features">
                   <div className="feat"><span className="feat-dot"/>Recognises any handwriting style</div>
                   <div className="feat"><span className="feat-dot"/>Automatic flowchart generation</div>
@@ -1121,6 +1141,7 @@ export default function App() {
                   <div className="feat"><span className="feat-dot"/>Fully interactive diagram editor</div>
                 </div>
 
+                {/* Tablet: condensed 2-column grid */}
                 <div className="hero-features-grid">
                   <div className="feat-grid-item"><span className="feat-dot"/>Any handwriting style</div>
                   <div className="feat-grid-item"><span className="feat-dot"/>Auto flowchart</div>
@@ -1131,49 +1152,63 @@ export default function App() {
 
               {/* RIGHT — upload zone */}
               <div className="upload-right">
-                {!image ? (
-                  <div>
-                    <div className={`drop ${dragOver ? "over" : ""}`}
-                      onDragOver={e=>{e.preventDefault();setDragOver(true)}}
-                      onDragLeave={()=>setDragOver(false)}
-                      onDrop={handleDrop}
-                      onClick={()=>fileRef.current.click()}>
-                      <span className="drop-icon">📓</span>
-                      <div className="drop-title">Drop or browse an image</div>
-                      <div className="drop-sub">Any photo · any handwriting · any angle</div>
-                      <div className="drop-hint">JPG · PNG · WEBP · HEIC</div>
-                      <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])} />
-                    </div>
 
-                    <div className="upload-btns">
-                      <button className="upload-opt" onClick={()=>fileRef.current.click()}>
-                        <span className="upload-opt-icon">🖼</span>
-                        <div>
-                          <div className="upload-opt-label">Upload Photo</div>
-                          <div className="upload-opt-sub">from device storage</div>
-                        </div>
-                      </button>
-                      <button className="upload-opt" onClick={()=>cameraRef.current.click()}>
-                        <span className="upload-opt-icon">📷</span>
-                        <div>
-                          <div className="upload-opt-label">Take a Photo</div>
-                          <div className="upload-opt-sub">open camera</div>
-                        </div>
-                      </button>
-                      <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])} />
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="img-prev">
-                      <span className="img-badge">Image ready</span>
-                      <img src={image} alt="Selected handwritten notes preview" />
-                    </div>
-                    <div style={{display:"flex",gap:10,marginBottom:14}}>
-                      <button className="btn btn-ghost" onClick={reset}>↩ Change image</button>
-                    </div>
+                {/* Drop zone — always visible, acts as add-more when images exist */}
+                <div className={`drop ${dragOver ? "over" : ""} ${images.length ? "drop-compact" : ""}`}
+                  onDragOver={e=>{e.preventDefault();setDragOver(true)}}
+                  onDragLeave={()=>setDragOver(false)}
+                  onDrop={handleDrop}
+                  onClick={()=>fileRef.current.click()}>
+                  {images.length === 0 ? (
+                    <>
+                      <span className="drop-icon">📓</span>
+                      <div className="drop-title">Drop or browse images</div>
+                      <div className="drop-sub">Any photo · any handwriting · any angle</div>
+                      <div className="drop-hint">JPG · PNG · WEBP · HEIC · Multiple files supported</div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="drop-icon" style={{fontSize:28,marginBottom:8}}>＋</span>
+                      <div className="drop-title" style={{fontSize:16}}>Add more images</div>
+                      <div className="drop-sub">Drop or click to add</div>
+                    </>
+                  )}
+                  <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}}
+                    onChange={e=>handleFiles(e.target.files)} />
+                </div>
+
+                {/* Image thumbnails grid */}
+                {images.length > 0 && (
+                  <div className="img-grid">
+                    {images.map((img, idx) => (
+                      <div key={idx} className="img-thumb">
+                        <img src={img.src} alt={`Page ${idx+1}`} />
+                        <div className="img-thumb-num">{idx+1}</div>
+                        <button className="img-thumb-del" onClick={e=>{e.stopPropagation();removeImage(idx);}}>✕</button>
+                      </div>
+                    ))}
                   </div>
                 )}
+
+                {/* Action buttons */}
+                <div className="upload-btns">
+                  <button className="upload-opt" onClick={()=>fileRef.current.click()}>
+                    <span className="upload-opt-icon">🖼</span>
+                    <div>
+                      <div className="upload-opt-label">Upload Photos</div>
+                      <div className="upload-opt-sub">from device storage</div>
+                    </div>
+                  </button>
+                  <button className="upload-opt" onClick={()=>cameraRef.current.click()}>
+                    <span className="upload-opt-icon">📷</span>
+                    <div>
+                      <div className="upload-opt-label">Take a Photo</div>
+                      <div className="upload-opt-sub">open camera</div>
+                    </div>
+                  </button>
+                  <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{display:"none"}}
+                    onChange={e=>handleFiles(e.target.files)} />
+                </div>
 
                 {loading ? (
                   <div className="loading-wrap">
@@ -1185,8 +1220,10 @@ export default function App() {
                   </div>
                 ) : (
                   <button className="btn btn-primary"
-                    disabled={!image||loading} onClick={analyze}>
-                    {loading ? <LoadingDots/> : "Analyse & Structure Notes"}
+                    disabled={!images.length||loading} onClick={analyze}>
+                    {images.length > 1
+                      ? `Analyse ${images.length} Images`
+                      : images.length === 1 ? "Analyse & Structure Notes" : "Analyse & Structure Notes"}
                   </button>
                 )}
 
@@ -1205,13 +1242,22 @@ export default function App() {
                   <div className="res-eyebrow">Structured from handwriting</div>
                   <div className="res-title">{title}</div>
                 </div>
+                {/* "New image" button visible in topbar on desktop only — on mobile it's in topnav */}
+                <button className="btn btn-ghost" onClick={reset} style={{display:"none"}}>↩ New image</button>
               </div>
 
-              {/* Two stacked full-height panels */}
+              {/* Desktop & all: two stacked full-width sections */}
               <div className="result-split">
 
                 {/* NOTES PANEL */}
-                <div className="result-panel" ref={notesCardRef}>
+                <div
+                  className="result-panel"
+                  data-tab="notes"
+                  ref={notesCardRef}
+                  style={{
+                    // On tablet/mobile, hide the inactive tab panel via JS
+                  }}
+                >
                   <div className="panel-hdr">
                     <div className="panel-label">Extracted Notes</div>
                     <div className="panel-actions">
@@ -1227,7 +1273,7 @@ export default function App() {
                       </button>
                     </div>
                   </div>
-                  <div className="notes-panel-body">
+                  <div style={{display:"flex",flexDirection:"column",flex:1}}>
                     {notesMode==="edit"
                       ? <textarea className="notes-ta-full" value={notes} onChange={e=>setNotes(e.target.value)} spellCheck={false} placeholder="Your extracted notes will appear here…"/>
                       : <div className="notes-prev-full nc" dangerouslySetInnerHTML={{__html:mdToHtml(notes)}}/>
@@ -1236,7 +1282,11 @@ export default function App() {
                 </div>
 
                 {/* DIAGRAM PANEL */}
-                <div className="result-panel" ref={flowCardRef}>
+                <div
+                  className="result-panel"
+                  data-tab="diagram"
+                  ref={flowCardRef}
+                >
                   <div className="panel-hdr">
                     <div className="panel-label">Visual Flow Diagram</div>
                     <div className="panel-actions">
@@ -1255,6 +1305,8 @@ export default function App() {
               </div>
 
               {dlError && <div className="dl-err">⚠ {dlError}</div>}
+
+
 
             </div>
           )}
