@@ -1155,7 +1155,13 @@ export default function App() {
               {/* RIGHT — upload zone */}
               <div className="upload-right">
 
-                {/* Drop zone — always visible, acts as add-more when images exist */}
+                {/* Hidden file inputs — outside all clickable elements to avoid event conflicts */}
+                <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}}
+                  onChange={e=>{handleFiles(e.target.files);e.target.value="";}} />
+                <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{display:"none"}}
+                  onChange={e=>{handleFiles(e.target.files);e.target.value="";}} />
+
+                {/* Drop zone */}
                 <div className={`drop ${dragOver ? "over" : ""} ${images.length ? "drop-compact" : ""}`}
                   onDragOver={e=>{e.preventDefault();setDragOver(true)}}
                   onDragLeave={()=>setDragOver(false)}
@@ -1166,7 +1172,7 @@ export default function App() {
                       <span className="drop-icon">📓</span>
                       <div className="drop-title">Drop or browse images</div>
                       <div className="drop-sub">Any photo · any handwriting · any angle</div>
-                      <div className="drop-hint">JPG · PNG · WEBP · HEIC · Multiple files supported</div>
+                      <div className="drop-hint">JPG · PNG · WEBP · HEIC · Multiple files</div>
                     </>
                   ) : (
                     <>
@@ -1175,8 +1181,6 @@ export default function App() {
                       <div className="drop-sub">Drop or click to add</div>
                     </>
                   )}
-                  <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}}
-                    onChange={e=>handleFiles(e.target.files)} />
                 </div>
 
                 {/* Image thumbnails grid */}
@@ -1186,7 +1190,8 @@ export default function App() {
                       <div key={idx} className="img-thumb">
                         <img src={img.src} alt={`Page ${idx+1}`} />
                         <div className="img-thumb-num">{idx+1}</div>
-                        <button className="img-thumb-del" onClick={e=>{e.stopPropagation();removeImage(idx);}}>✕</button>
+                        <button className="img-thumb-del"
+                          onClick={e=>{e.stopPropagation();removeImage(idx);}}>✕</button>
                       </div>
                     ))}
                   </div>
@@ -1194,22 +1199,20 @@ export default function App() {
 
                 {/* Action buttons */}
                 <div className="upload-btns">
-                  <button className="upload-opt" onClick={()=>fileRef.current.click()}>
+                  <button className="upload-opt" onClick={e=>{e.stopPropagation();fileRef.current.click();}}>
                     <span className="upload-opt-icon">🖼</span>
                     <div>
                       <div className="upload-opt-label">Upload Photos</div>
-                      <div className="upload-opt-sub">from device storage</div>
+                      <div className="upload-opt-sub">select multiple files</div>
                     </div>
                   </button>
-                  <button className="upload-opt" onClick={()=>cameraRef.current.click()}>
+                  <button className="upload-opt" onClick={e=>{e.stopPropagation();cameraRef.current.click();}}>
                     <span className="upload-opt-icon">📷</span>
                     <div>
                       <div className="upload-opt-label">Take a Photo</div>
                       <div className="upload-opt-sub">open camera</div>
                     </div>
                   </button>
-                  <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{display:"none"}}
-                    onChange={e=>handleFiles(e.target.files)} />
                 </div>
 
                 {loading ? (
