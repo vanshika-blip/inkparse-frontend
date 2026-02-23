@@ -634,17 +634,21 @@ export default function App() {
 
         /* ── UPLOAD LAYOUT ── */
         .upload-wrap{
-          max-width:1200px;margin:0 auto;width:100%;
-          padding:64px 48px 100px;
+          width:100%;
           display:grid;
-          grid-template-columns:1fr 1fr;
-          gap:80px;align-items:start;
+          grid-template-columns:42% 58%;
           min-height:calc(100vh - var(--nav-h));
         }
-        .upload-left{display:flex;flex-direction:column;padding-top:40px;}
+        .upload-left{
+          display:flex;flex-direction:column;justify-content:center;
+          padding:64px 56px 64px 64px;
+          border-right:1px solid var(--bd-l);
+        }
         .upload-right{
-          /* Stick to top, fill visual height */
-          position:sticky;top:calc(var(--nav-h) + 24px);
+          display:flex;flex-direction:column;justify-content:center;
+          padding:56px 64px;
+          background:var(--parch-1);
+          gap:16px;
         }
 
         .eyebrow{
@@ -693,32 +697,33 @@ export default function App() {
 
         /* ── DROP ZONE ── */
         .drop{
-          border:1.5px dashed var(--bd);background:var(--parch-1);
-          border-radius:var(--r-lg);padding:64px 40px;
+          border:1.5px dashed var(--bd);background:var(--parch-0);
+          border-radius:var(--r-lg);padding:48px 40px;
           text-align:center;cursor:pointer;transition:all .3s;
-          min-height:360px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+          min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;
         }
         .drop:hover,.drop.over{
           border-color:var(--acc);background:#f8f0e0;
-          transform:translateY(-3px);box-shadow:var(--shadow-lg);
+          box-shadow:var(--shadow-lg);
         }
-        .drop-icon{font-size:44px;margin-bottom:20px;filter:drop-shadow(0 2px 4px rgba(26,14,6,0.15));}
-        .drop-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;font-style:italic;color:var(--ink-1);margin-bottom:8px;}
+        .drop-icon{font-size:40px;margin-bottom:16px;filter:drop-shadow(0 2px 4px rgba(26,14,6,0.15));}
+        .drop-title{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;font-style:italic;color:var(--ink-1);margin-bottom:6px;}
         .drop-sub{font-family:'EB Garamond',serif;font-size:14px;font-style:italic;color:var(--ink-3);}
-        .drop-hint{margin-top:20px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--bd);}
+        .drop-hint{margin-top:14px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--bd);}
 
-        /* ── UPLOAD OPTION BUTTONS ── */
-        .upload-btns{display:flex;align-items:stretch;gap:12px;margin-top:16px}
+        /* ── UPLOAD OPTION BUTTONS — two equal side-by-side ── */
+        .upload-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
         .upload-opt{
-          flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;
-          padding:16px 14px;border:1.5px solid var(--bd-l);border-radius:var(--r);
-          background:var(--parch-0);cursor:pointer;transition:all .2s;text-align:center;
+          display:flex;flex-direction:row;align-items:center;gap:14px;
+          padding:18px 20px;
+          border:1.5px solid var(--bd-l);border-radius:var(--r);
+          background:var(--parch-0);cursor:pointer;transition:all .2s;
         }
-        .upload-opt:hover{border-color:var(--acc);background:var(--parch-1);transform:translateY(-2px);box-shadow:0 6px 20px rgba(107,60,24,0.1);}
-        .upload-opt-icon{font-size:24px;line-height:1}
+        .upload-opt:hover{border-color:var(--acc);box-shadow:0 4px 16px rgba(107,60,24,0.08);}
+        .upload-opt-icon{font-size:22px;line-height:1;flex-shrink:0;}
         .upload-opt-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-1);font-weight:500;}
-        .upload-opt-sub{font-family:'EB Garamond',serif;font-size:12px;color:var(--ink-3);font-style:italic;}
-        .upload-or{font-family:'EB Garamond',serif;font-size:13px;color:var(--ink-4);font-style:italic;display:flex;align-items:center;padding:0 4px;align-self:center;}
+        .upload-opt-sub{font-family:'EB Garamond',serif;font-size:12px;color:var(--ink-3);font-style:italic;margin-top:2px;}
+        .upload-or{display:none;}
 
         /* ── IMAGE PREVIEW ── */
         .img-prev{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--bd-l);margin-bottom:16px;position:relative;box-shadow:var(--shadow);}
@@ -795,23 +800,21 @@ export default function App() {
         }
         .tab-btn.active{color:var(--acc);border-bottom-color:var(--acc);}
 
-        /* Desktop: true full-height split — each column is its own scroll container */
+        /* Desktop: two stacked full-width sections, each ~50vh */
         .result-split{
-          display:grid;
-          grid-template-columns:45% 55%;
-          /* nav=60px + res-topbar ~56px */
-          height:calc(100vh - var(--nav-h) - 56px);
-          overflow:hidden;
+          display:flex;
+          flex-direction:column;
         }
 
         .result-panel{
-          overflow-y:auto;
-          height:100%;
           display:flex;
           flex-direction:column;
-          border-right:1px solid var(--bd-l);
+          border-bottom:1px solid var(--bd-l);
+          /* Each panel takes roughly half the available viewport */
+          height:calc((100vh - var(--nav-h) - 56px) / 2);
+          overflow:hidden;
         }
-        .result-panel:last-child{border-right:none;}
+        .result-panel:last-child{border-bottom:none;}
 
         /* Panel header */
         .panel-hdr{
@@ -833,12 +836,12 @@ export default function App() {
         .notes-ta-full{
           width:100%;flex:1;
           background:transparent;border:none;outline:none;
-          padding:32px 40px;
+          padding:28px 36px;
           color:var(--ink-2);font-family:'DM Mono',monospace;font-size:13px;
           line-height:1.9;resize:none;
-          min-height:400px;
+          overflow-y:auto;
         }
-        .notes-prev-full{padding:32px 40px;flex:1;}
+        .notes-prev-full{padding:28px 36px;flex:1;overflow-y:auto;}
 
         /* Rendered notes */
         .nc h1{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;font-style:italic;color:var(--ink-0);margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid var(--bd-l);}
@@ -871,10 +874,9 @@ export default function App() {
         .dl-svg{background:rgba(26,68,40,0.06);border:1px solid rgba(26,68,40,0.15);color:var(--green)}
         .dl-svg:hover:not(:disabled){background:rgba(26,68,40,0.1)}
 
-        /* Diagram panel body */
+        /* Diagram panel body — fills remaining height inside the panel */
         .diagram-panel-body{
-          flex:1;display:flex;flex-direction:column;min-height:0;
-          /* allow inner FlowEditor to grow */
+          flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;
         }
         .diagram-panel-body > div{flex:1;display:flex;flex-direction:column;min-height:0;}
 
@@ -928,30 +930,23 @@ export default function App() {
 
           .upload-wrap{
             grid-template-columns:1fr;
-            gap:40px;min-height:auto;
-            padding:48px 32px 80px;
-            align-items:start;
+            min-height:auto;
           }
-          .upload-right{position:static;}
+          .upload-left{
+            padding:48px 32px;
+            border-right:none;
+            border-bottom:1px solid var(--bd-l);
+            justify-content:flex-start;
+          }
+          .upload-right{padding:40px 32px;}
           .hero-features{display:none;}
           .hero-features-grid{display:grid;}
 
-          /* Results: tabs instead of side-by-side */
-          .result-split{
-            grid-template-columns:1fr;
-            height:auto;
-            overflow:visible;
-          }
-          .tab-bar{display:flex;}
+          /* Results: on tablet, keep stacked but reduce panel height */
+          .result-split{height:auto;}
+          .tab-bar{display:none;}
           .res-topbar{padding:12px 32px;}
-
-          .result-panel{
-            height:auto;
-            overflow:visible;
-            border-right:none;
-            border-bottom:1px solid var(--bd-l);
-          }
-          .result-panel:last-child{border-bottom:none;}
+          .result-panel{height:auto;overflow:visible;}
 
           .panel-hdr{padding:12px 24px;}
           .notes-ta-full,.notes-prev-full{padding:28px 28px;}
@@ -965,8 +960,9 @@ export default function App() {
           .brand-name{font-size:20px;}
           .topnav-emblem{width:34px;height:34px;font-size:14px;}
 
-          .upload-wrap{padding:28px 18px 60px;gap:28px;align-items:start;}
-          .upload-right{position:static;}
+          .upload-wrap{grid-template-columns:1fr;min-height:auto;}
+          .upload-left{padding:32px 18px;border-right:none;border-bottom:1px solid var(--bd-l);justify-content:flex-start;}
+          .upload-right{padding:28px 18px 60px;}
           h1{font-size:clamp(28px,8vw,40px);letter-spacing:-0.5px;margin-bottom:16px;}
           .eyebrow{font-size:8px;letter-spacing:3px;margin-bottom:10px;}
           .hero-desc{font-size:15px;margin-bottom:24px;}
@@ -977,16 +973,15 @@ export default function App() {
           .drop-title{font-size:18px;}
           .drop-hint{display:none;}
 
-          /* Upload option buttons stack vertically */
-          .upload-btns{flex-direction:column;gap:8px;}
-          .upload-opt{flex-direction:row;justify-content:flex-start;padding:14px 16px;gap:14px;text-align:left;}
+          /* Upload option buttons — stack to single column on small screens */
+          .upload-btns{grid-template-columns:1fr;}
+          .upload-opt{padding:14px 16px;}
           .upload-opt-icon{font-size:22px;}
-          .upload-or{display:none;}
           .img-prev img{max-height:200px;}
           .btn-primary{padding:16px;font-size:10px;margin-top:14px!important;}
 
-          /* Results: pure stacked, no tabs */
-          .tab-bar{padding:0 18px;}
+          /* Results: pure stacked */
+          .tab-bar{display:none;}
           .res-topbar{padding:10px 18px;}
           .res-title{font-size:18px;}
           .result-panel{height:auto;overflow:visible;}
@@ -1110,7 +1105,6 @@ export default function App() {
                           <div className="upload-opt-sub">from device storage</div>
                         </div>
                       </button>
-                      <div className="upload-or">or</div>
                       <button className="upload-opt" onClick={()=>cameraRef.current.click()}>
                         <span className="upload-opt-icon">📷</span>
                         <div>
@@ -1142,7 +1136,7 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <button className="btn btn-primary" style={{marginTop:20}}
+                  <button className="btn btn-primary"
                     disabled={!image||loading} onClick={analyze}>
                     {loading ? <LoadingDots/> : "Analyse & Structure Notes"}
                   </button>
@@ -1167,17 +1161,7 @@ export default function App() {
                 <button className="btn btn-ghost" onClick={reset} style={{display:"none"}}>↩ New image</button>
               </div>
 
-              {/* Tablet tab bar */}
-              <div className="tab-bar">
-                <button className={`tab-btn ${activeTab==="notes"?"active":""}`} onClick={()=>setActiveTab("notes")}>
-                  Extracted Notes
-                </button>
-                <button className={`tab-btn ${activeTab==="diagram"?"active":""}`} onClick={()=>setActiveTab("diagram")}>
-                  Flow Diagram
-                </button>
-              </div>
-
-              {/* Desktop: side-by-side split | Tablet: tabs | Mobile: stacked */}
+              {/* Desktop & all: two stacked full-width sections */}
               <div className="result-split">
 
                 {/* NOTES PANEL */}
@@ -1237,13 +1221,7 @@ export default function App() {
 
               {dlError && <div className="dl-err">⚠ {dlError}</div>}
 
-              {/* Tab panel show/hide — inject style for tablet */}
-              <style>{`
-                @media(max-width:1024px) and (min-width:768px){
-                  .result-panel[data-tab="notes"]{ display: ${activeTab==="notes"?"flex":"none"}; }
-                  .result-panel[data-tab="diagram"]{ display: ${activeTab==="diagram"?"flex":"none"}; }
-                }
-              `}</style>
+
 
             </div>
           )}
