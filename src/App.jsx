@@ -96,41 +96,107 @@ async function makeDocxBlob(title, notes) {
   return Packer.toBlob(doc);
 }
 
-async function svgToJpgBlob(svgElement) {
-  const clone = svgElement.cloneNode(true);
-  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
-  const bbox = svgElement.getBoundingClientRect();
-  const w = svgElement.getAttribute("width") || Math.ceil(bbox.width) || 1200;
-  const h = svgElement.getAttribute("height") || Math.ceil(bbox.height) || 900;
-  clone.setAttribute("width", w);
-  clone.setAttribute("height", h);
-  const styleEls = clone.querySelectorAll("style");
-  styleEls.forEach(s => s.remove());
-  const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-  bg.setAttribute("x", "0"); bg.setAttribute("y", "0");
-  bg.setAttribute("width", w); bg.setAttribute("height", h);
-  bg.setAttribute("fill", "#F2F4FB");
-  clone.insertBefore(bg, clone.firstChild);
-  const svgStr = new XMLSerializer().serializeToString(clone);
-  const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(svgBlob);
+// Builds a clean full-content SVG from node/edge data (ignores pan/zoom completely)
+const EXPORT_COLORS = [
+  { fill: "#EEF3FB", stroke: "#4A6FA5", text: "#1A2235" },
+  { fill: "#F0EAF8", stroke: "#7C5CBF", text: "#1A1230" },
+  { fill: "#E8F5EE", stroke: "#2E7D52", text: "#0D2B1A" },
+  { fill: "#FFF4E6", stroke: "#C07030", text: "#2B1800" },
+  { fill: "#FDE8EC", stroke: "#C0364A", text: "#2B000D" },
+  { fill: "#E6F2FF", stroke: "#2E6FA5", text: "#002235" },
+];
+
+function buildDiagramSvgString(nodes, edges) {
+  const nodeList = Object.values(nodes);
+  if (!nodeList.length) return null;
+
+  const PAD = 70;
+  const minX = Math.min(...nodeList.map(n => n.x));
+  const minY = Math.min(...nodeList.map(n => n.y));
+  const maxX = Math.max(...nodeList.map(n => n.x + NW));
+  const maxY = Math.max(...nodeList.map(n => n.y + NH));
+  const W = maxX - minX + PAD * 2;
+  const H = maxY - minY + PAD * 2;
+  const ox = PAD - minX;
+  const oy = PAD - minY;
+
+  const nc = n => ({ x: n.x + NW / 2 + ox, y: n.y + NH / 2 + oy });
+
+  // edges
+  let edgeSvg = '';
+  for (const e of edges) {
+    const from = nodes[e.from], to = nodes[e.to];
+    if (!from || !to) continue;
+    const f = nc(from), t = nc(to);
+    const dx = t.x - f.x, dy = t.y - f.y, len = Math.sqrt(dx*dx + dy*dy) || 1;
+    const ux = dx/len, uy = dy/len;
+    const sx = f.x + ux*NW*0.52, sy = f.y + uy*NH*0.52;
+    const ex = t.x - ux*NW*0.52, ey = t.y - uy*NH*0.52;
+    const mx = (sx+ex)/2 - uy*30, my = (sy+ey)/2 + ux*30;
+    edgeSvg += `<path d="M${sx},${sy} Q${mx},${my} ${ex},${ey}" stroke="#4A6FA5" stroke-width="1.5" fill="none" marker-end="url(#arr)" opacity="0.65"/>`;
+    if (e.label) {
+      const midX = (sx+2*mx+ex)/4, midY = (sy+2*my+ey)/4;
+      const lw = e.label.length * 6 + 16;
+      edgeSvg += `<rect x="${midX - lw/2}" y="${midY-9}" width="${lw}" height="18" rx="9" fill="#F7F8FC" stroke="#4A6FA5" stroke-width="1"/>`;
+      edgeSvg += `<text x="${midX}" y="${midY+1}" text-anchor="middle" dominant-baseline="middle" fill="#4A6FA5" font-size="9" font-family="monospace" letter-spacing="1">${e.label}</text>`;
+    }
+  }
+
+  // nodes
+  let nodeSvg = '';
+  nodeList.forEach((n, idx) => {
+    const col = EXPORT_COLORS[idx % EXPORT_COLORS.length];
+    const nx = n.x + ox, ny = n.y + oy;
+    const label = n.label.length > 22 ? n.label.slice(0, 20) + "…" : n.label;
+    if (n.shape === "diamond") {
+      nodeSvg += `<polygon points="${nx+NW/2},${ny-4} ${nx+NW+4},${ny+NH/2} ${nx+NW/2},${ny+NH+4} ${nx-4},${ny+NH/2}" fill="${col.fill}" stroke="${col.stroke}" stroke-width="1.2"/>`;
+    } else if (n.shape === "round") {
+      nodeSvg += `<rect x="${nx}" y="${ny}" width="${NW}" height="${NH}" rx="${NH/2}" fill="${col.fill}" stroke="${col.stroke}" stroke-width="1.2"/>`;
+    } else {
+      nodeSvg += `<rect x="${nx}" y="${ny}" width="${NW}" height="${NH}" rx="6" fill="${col.fill}" stroke="${col.stroke}" stroke-width="1.2"/>`;
+    }
+    nodeSvg += `<rect x="${nx}" y="${ny}" width="3" height="${NH}" rx="2" fill="${col.stroke}" opacity="0.6"/>`;
+    nodeSvg += `<text x="${nx+NW/2}" y="${ny+NH/2+1}" text-anchor="middle" dominant-baseline="middle" fill="${col.text}" font-size="10" font-family="monospace" font-weight="500" letter-spacing="0.5">${label}</text>`;
+  });
+
+  return { svgStr: `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+    <defs>
+      <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0,10 3.5,0 7" fill="#4A6FA5" opacity="0.7"/>
+      </marker>
+      <pattern id="dotgrid" width="28" height="28" patternUnits="userSpaceOnUse">
+        <circle cx="1" cy="1" r="1" fill="rgba(74,111,165,0.1)"/>
+      </pattern>
+    </defs>
+    <rect width="${W}" height="${H}" fill="#F2F4FB"/>
+    <rect width="${W}" height="${H}" fill="url(#dotgrid)"/>
+    ${edgeSvg}
+    ${nodeSvg}
+  </svg>`, W, H };
+}
+
+async function exportDiagramFull(nodes, edges) {
+  const result = buildDiagramSvgString(nodes, edges);
+  if (!result) throw new Error("No nodes to export");
+  const { svgStr, W, H } = result;
+  const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const scale = 2;
-      canvas.width  = Number(w) * scale;
-      canvas.height = Number(h) * scale;
+      canvas.width  = W * scale;
+      canvas.height = H * scale;
       const ctx = canvas.getContext("2d");
       ctx.scale(scale, scale);
       ctx.fillStyle = "#F2F4FB";
-      ctx.fillRect(0, 0, Number(w), Number(h));
+      ctx.fillRect(0, 0, W, H);
       ctx.drawImage(img, 0, 0);
       URL.revokeObjectURL(url);
       canvas.toBlob(b => resolve(b), "image/jpeg", 0.95);
     };
-    img.onerror = (e) => { URL.revokeObjectURL(url); reject(new Error("SVG render failed")); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("SVG render failed")); };
     img.src = url;
   });
 }
@@ -921,11 +987,66 @@ export default function App() {
     setDlBusy("notes-jpg"); setDlError("");
     try {
       await loadH2C();
-      const target = notesCardRef.current?.querySelector(".notes-scroll") || notesCardRef.current;
-      if (!target) throw new Error("Notes panel not found");
-      const canvas = await window.html2canvas(target, { scale:2, backgroundColor:"#FFFFFF", useCORS:true, logging:false });
-      triggerDownload(canvas.toDataURL("image/jpeg",0.95), `${title||"notes"}.jpg`);
-    } catch(e) { setDlError("JPG export failed: " + (e?.message || "unknown error")); }
+
+      // Build a full-height off-screen container — no scroll clipping
+      const wrapper = document.createElement("div");
+      wrapper.style.cssText = [
+        "position:fixed", "top:-99999px", "left:0",
+        "width:820px", "background:#FFFFFF",
+        "padding:48px 56px", "box-sizing:border-box",
+        "font-family:'Source Code Pro',monospace",
+        "color:#1A2235", "line-height:1.8",
+      ].join(";");
+
+      // Title bar
+      const titleBar = document.createElement("div");
+      titleBar.style.cssText = "font-family:'Lora',serif;font-size:24px;font-weight:700;color:#1A2235;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #DDE2EE;";
+      titleBar.textContent = title || "Notes";
+      wrapper.appendChild(titleBar);
+
+      // Notes content with inlined styles
+      const styleTag = document.createElement("style");
+      styleTag.textContent = `
+        .nc-ex h1{font-family:'Lora',serif;font-size:20px;font-weight:700;color:#1A2235;margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid #DDE2EE}
+        .nc-ex h2{font-family:'Lora',serif;font-size:16px;font-weight:600;color:#1A2235;margin:20px 0 8px}
+        .nc-ex h3{font-size:10px;font-weight:600;color:#4A6FA5;margin:16px 0 6px;text-transform:uppercase;letter-spacing:3px}
+        .nc-ex p{font-size:13px;line-height:2;color:#3A4A65;margin-bottom:10px}
+        .nc-ex ul{list-style:none;padding:0;margin:6px 0 12px}
+        .nc-ex ol{padding-left:22px;margin:6px 0 12px}
+        .nc-ex li{font-size:13px;line-height:1.9;color:#3A4A65;padding:2px 0 2px 20px;position:relative}
+        .nc-ex ul li::before{content:'›';position:absolute;left:4px;color:#4A6FA5;font-size:15px}
+        .nc-ex ol li{padding-left:0;list-style:decimal}
+        .nc-ex ol li::before{display:none}
+        .nc-ex strong{color:#1A2235;font-weight:700}
+        .nc-ex em{color:#4A6FA5;font-style:italic}
+        .nc-ex code{background:rgba(74,111,165,0.07);color:#2E4F80;padding:2px 7px;border-radius:4px;font-size:11px;border:1px solid rgba(74,111,165,0.12)}
+        .nc-ex hr{border:none;border-top:1px solid #DDE2EE;margin:16px 0}
+      `;
+      wrapper.appendChild(styleTag);
+
+      const content = document.createElement("div");
+      content.className = "nc-ex";
+      content.innerHTML = mdToHtml(notes);
+      wrapper.appendChild(content);
+
+      document.body.appendChild(wrapper);
+
+      const canvas = await window.html2canvas(wrapper, {
+        scale: 2,
+        backgroundColor: "#FFFFFF",
+        useCORS: true,
+        logging: false,
+        width: 820,
+        height: wrapper.scrollHeight,
+        windowWidth: 820,
+      });
+
+      document.body.removeChild(wrapper);
+      triggerDownload(canvas.toDataURL("image/jpeg", 0.95), `${title||"notes"}.jpg`);
+    } catch(e) {
+      try { document.querySelector('[data-noteforge-export]')?.remove(); } catch(_) {}
+      setDlError("JPG export failed: " + (e?.message || "unknown error"));
+    }
     finally { setDlBusy(""); }
   };
 
@@ -943,9 +1064,8 @@ export default function App() {
   const dlDiagramJpg = async () => {
     setDlBusy("diag-jpg"); setDlError("");
     try {
-      const svgEl = flowCardRef.current?.querySelector("svg");
-      if (!svgEl) throw new Error("Diagram SVG not found");
-      const blob = await svgToJpgBlob(svgEl);
+      // Export from node/edge data directly — full diagram, no pan/zoom clipping
+      const blob = await exportDiagramFull(flowNodes, flowEdges);
       const url = URL.createObjectURL(blob);
       triggerDownload(url, `${title||"diagram"}.jpg`);
       setTimeout(() => URL.revokeObjectURL(url), 3000);
@@ -956,16 +1076,13 @@ export default function App() {
   const dlDiagramSvg = () => {
     setDlError("");
     try {
-      const svgEl = flowCardRef.current?.querySelector("svg");
-      if (!svgEl) throw new Error("Diagram not found");
-      const clone = svgEl.cloneNode(true);
-      clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
-      clone.setAttribute("style","background:#F2F4FB");
-      const blob = new Blob([clone.outerHTML], { type:"image/svg+xml" });
+      const result = buildDiagramSvgString(flowNodes, flowEdges);
+      if (!result) throw new Error("No nodes to export");
+      const blob = new Blob([result.svgStr], { type: "image/svg+xml" });
       const url = URL.createObjectURL(blob);
       triggerDownload(url, `${title||"diagram"}.svg`);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
-    } catch(e) { setDlError("SVG export failed: "+e.message); }
+    } catch(e) { setDlError("SVG export failed: " + e.message); }
   };
 
   const reset = () => {
