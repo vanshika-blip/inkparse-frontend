@@ -956,7 +956,6 @@ export default function App() {
         {/* ── NAV ── */}
         <nav className="topnav">
           <div className="brand">
-            <div className="brand-logo">📄</div>
             <div className="brand-name">NoteForge</div>
           </div>
           <div className="nav-right">
@@ -972,8 +971,6 @@ export default function App() {
             <input ref={cameraRef}  type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={onCameraChange} />
 
             <div className="upload-hero">
-              <div className="upload-hero-icon">📓</div>
-              <h1>Turn notes into insights</h1>
               <p>Upload a photo of your handwritten notes and get structured text with a flow diagram in seconds.</p>
             </div>
 
@@ -987,7 +984,7 @@ export default function App() {
               >
                 {images.length === 0 ? (
                   <>
-                    <span className="drop-icon">🖼️</span>
+                    <span className="drop-icon">📓</span>
                     <div className="drop-title">Drop images here</div>
                     <div className="drop-sub">or click to browse files</div>
                     <div className="drop-hint">JPG · PNG · WEBP · Multiple pages supported</div>
@@ -1020,17 +1017,13 @@ export default function App() {
                   <div className="section-divider">or</div>
                   <div className="upload-opts">
                     <button className="upload-opt" onClick={e => { e.stopPropagation(); galleryRef.current.click(); }}>
-                      <span className="upload-opt-icon">🖼</span>
                       <div className="upload-opt-text">
                         <span className="upload-opt-label">Gallery</span>
-                        <span className="upload-opt-desc">Browse your files</span>
                       </div>
                     </button>
                     <button className="upload-opt" onClick={e => { e.stopPropagation(); cameraRef.current.click(); }}>
-                      <span className="upload-opt-icon">📷</span>
                       <div className="upload-opt-text">
-                        <span className="upload-opt-label">Camera</span>
-                        <span className="upload-opt-desc">Capture instantly</span>
+                        <span className="upload-opt-label">Take picture</span>
                       </div>
                     </button>
                   </div>
