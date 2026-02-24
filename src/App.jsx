@@ -212,6 +212,11 @@ function FlowEditor({ nodes, edges, onChange }) {
 
   const nodeCenter = n => ({ x: n.x + NW / 2, y: n.y + NH / 2 });
 
+  // Compute canvas size from node positions so scroll area is always big enough
+  const allNodes = Object.values(nodes);
+  const canvasW = Math.max(1200, ...allNodes.map(n => n.x + NW + 120));
+  const canvasH = Math.max(900,  ...allNodes.map(n => n.y + NH + 120));
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
       <div className="fe-toolbar">
@@ -241,9 +246,12 @@ function FlowEditor({ nodes, edges, onChange }) {
         <button className="fe-btn" onClick={() => { setZoom(0.85); setPan({ x: 40, y: 30 }); }}>⊡</button>
       </div>
 
+      <div className="diagram-body">
       <svg
         ref={svgRef}
-        style={{ flex: 1, display: "block", cursor: panningSt ? "grabbing" : connecting ? "crosshair" : "grab", background: "transparent", touchAction: "none", overflow: "hidden" }}
+        width={canvasW}
+        height={canvasH}
+        style={{ display: "block", cursor: panningSt ? "grabbing" : connecting ? "crosshair" : "grab", background: "transparent", touchAction: "none" }}
         onMouseDown={onSvgMD} onMouseMove={onMM} onMouseUp={onMU} onWheel={onWheel}
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
       >
@@ -259,7 +267,7 @@ function FlowEditor({ nodes, edges, onChange }) {
           </pattern>
         </defs>
         <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
-          <rect x="-5000" y="-5000" width="12000" height="12000" fill="url(#dotgrid)" />
+          <rect x="-5000" y="-5000" width="20000" height="20000" fill="url(#dotgrid)" />
           {/* Edges */}
           {edges.map((e, i) => {
             const from = nodes[e.from], to = nodes[e.to];
@@ -342,6 +350,7 @@ function FlowEditor({ nodes, edges, onChange }) {
           })}
         </g>
       </svg>
+      </div>
 
       <div className="fe-hint-bar">
         Double-click to rename · Drag to move · Select → Link · <strong>Scroll / pinch to zoom</strong> · Drag background to pan
@@ -653,14 +662,23 @@ const css = `
   .notes-ta::placeholder{color:var(--muted2)}
   .notes-prev{padding:22px 26px}
 
-  /* Diagram panel: no overflow, SVG fills */
+  .diagram-body-outer{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+
+  /* Diagram panel: both-axis scroll like a notes canvas */
   .diagram-body{
     flex:1;
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
+    overflow:auto;
     min-height:0;
+    position:relative;
   }
+  /* Custom scrollbars — thin, cyan-tinted, matches notes panel */
+  .diagram-body::-webkit-scrollbar{width:6px;height:6px}
+  .diagram-body::-webkit-scrollbar-track{background:var(--surf2)}
+  .diagram-body::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.25);border-radius:3px}
+  .diagram-body::-webkit-scrollbar-thumb:hover{background:rgba(0,212,255,0.45)}
+  .diagram-body::-webkit-scrollbar-corner{background:var(--surf2)}
+  /* Firefox */
+  .diagram-body{scrollbar-width:thin;scrollbar-color:rgba(0,212,255,0.25) var(--surf2)}
 
   /* Notes rendered */
   .nc h1{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
@@ -998,6 +1016,7 @@ export default function App() {
           <div className="nav-right">
             {step === "result" && <button className="btn-ghost" onClick={reset}>↩ New Upload</button>}
             <div className="status-dot" />
+            <div className="nav-meta">v2 · {year}</div>
           </div>
         </nav>
 
@@ -1173,7 +1192,7 @@ export default function App() {
                     <button className="dl-btn dl-svg" onClick={dlDiagramSvg}>◈ SVG</button>
                   </div>
                 </div>
-                <div className="diagram-body">
+                <div className="diagram-body-outer">
                   <FlowEditor
                     nodes={flowNodes}
                     edges={flowEdges}
