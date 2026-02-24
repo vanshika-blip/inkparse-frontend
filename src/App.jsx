@@ -971,6 +971,7 @@ export default function App() {
             <input ref={cameraRef}  type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={onCameraChange} />
 
             <div className="upload-hero">
+              <h1>Turn notes into insights</h1>
               <p>Upload a photo of your handwritten notes and get structured text with a flow diagram in seconds.</p>
             </div>
 
@@ -1023,7 +1024,7 @@ export default function App() {
                     </button>
                     <button className="upload-opt" onClick={e => { e.stopPropagation(); cameraRef.current.click(); }}>
                       <div className="upload-opt-text">
-                        <span className="upload-opt-label">Take picture</span>
+                        <span className="upload-opt-label">Camera</span>
                       </div>
                     </button>
                   </div>
