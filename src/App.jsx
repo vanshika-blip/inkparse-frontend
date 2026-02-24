@@ -504,7 +504,7 @@ const css = `
   .upload-hero h1{font-family:'Lora',serif;font-size:clamp(22px,5vw,32px);font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.2}
   .upload-hero p{font-size:12px;color:var(--muted);letter-spacing:0.5px;line-height:1.7;max-width:360px;margin:0 auto}
 
-  .upload-well{width:100%;max-width:560px;display:flex;flex-direction:column;gap:12px}
+  .upload-well{width:100%;max-width:860px;display:flex;flex-direction:column;gap:12px}
 
   /* ── DROP ZONE ── */
   .drop{
@@ -707,6 +707,7 @@ const css = `
     .upload-page{padding:28px 16px 48px;justify-content:flex-start;padding-top:40px}
     .upload-hero{margin-bottom:28px}
     .upload-hero-icon{width:52px;height:52px;font-size:22px}
+    .upload-well{max-width:100%}
 
     .result-page{height:auto;overflow:visible}
     .app.result-mode{height:auto;overflow:visible}
