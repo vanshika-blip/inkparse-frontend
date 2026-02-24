@@ -93,7 +93,7 @@ async function makeDocxBlob(title, notes) {
   return Packer.toBlob(doc);
 }
 
-// ── NODE COLORS — light paper palette ────────────────────────
+// ── NODE COLORS ───────────────────────────────────────────────
 const NODE_COLORS = [
   { fill: "#EEF3FB", stroke: "#4A6FA5", text: "#1A2235", glow: "rgba(74,111,165,0.25)" },
   { fill: "#F0EAF8", stroke: "#7C5CBF", text: "#1A1230", glow: "rgba(124,92,191,0.25)" },
@@ -363,7 +363,7 @@ function FlowEditor({ nodes, edges, onChange }) {
   );
 }
 
-// ── CSS — COOL PAPER THEME ────────────────────────────────────
+// ── CSS ───────────────────────────────────────────────────────
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Code+Pro:wght@300;400;500;600&display=swap');
 
@@ -389,7 +389,7 @@ const css = `
     --muted2:#B0BECC;
     --r:8px;
     --r-lg:14px;
-    --nav-h:56px;
+    --nav-h:52px;
   }
 
   html,body{height:100%}
@@ -400,12 +400,6 @@ const css = `
     font-family:'Source Code Pro',monospace;
     -webkit-font-smoothing:antialiased;
     overflow-x:hidden;
-  }
-  body::before{
-    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-    background:
-      radial-gradient(ellipse 60% 40% at 0% 0%,rgba(74,111,165,0.04),transparent),
-      radial-gradient(ellipse 50% 60% at 100% 100%,rgba(74,111,165,0.03),transparent);
   }
 
   #root{height:100%}
@@ -422,21 +416,17 @@ const css = `
     padding:0 32px;z-index:100;position:sticky;top:0;
     box-shadow:0 1px 12px rgba(74,111,165,0.07);
   }
-  .brand{display:flex;align-items:center;gap:12px}
+  .brand{display:flex;align-items:center;gap:10px}
   .brand-logo{
-    width:34px;height:34px;border-radius:8px;flex-shrink:0;
+    width:30px;height:30px;border-radius:7px;flex-shrink:0;
     border:1px solid var(--border2);
     background:linear-gradient(135deg,#EEF3FB,#D8E4F5);
-    display:flex;align-items:center;justify-content:center;font-size:16px;
+    display:flex;align-items:center;justify-content:center;font-size:14px;
     box-shadow:0 2px 8px rgba(74,111,165,0.1);
   }
-  .brand-name{font-family:'Lora',serif;font-size:19px;font-weight:700;color:var(--text);letter-spacing:-0.3px}
-  .brand-name span{color:var(--accent)}
-  .brand-sub{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-top:1px;font-family:'Source Code Pro',monospace}
+  .brand-name{font-family:'Lora',serif;font-size:17px;font-weight:700;color:var(--text);letter-spacing:-0.3px}
   .nav-right{display:flex;align-items:center;gap:10px}
-  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(46,125,82,0.5);animation:blink 2s ease infinite;flex-shrink:0}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-  .nav-meta{font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted)}
+  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
   .btn-ghost{
     font-family:'Source Code Pro',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
     font-weight:500;border:1px solid var(--border);color:var(--muted);
@@ -447,71 +437,33 @@ const css = `
 
   /* ── UPLOAD PAGE ── */
   .upload-page{
-    flex:1;display:grid;grid-template-columns:44% 56%;
+    flex:1;display:flex;align-items:flex-start;justify-content:center;
     min-height:calc(100vh - var(--nav-h));
+    padding:48px 24px 72px;
   }
-  .upload-left{
-    display:flex;flex-direction:column;justify-content:center;
-    padding:72px 52px 72px 56px;
-    border-right:1px solid var(--border);
-    position:relative;overflow:hidden;
-    background:linear-gradient(160deg,#FFFFFF 0%,#EEF3FB 100%);
+  .upload-well{
+    width:100%;max-width:560px;
+    display:flex;flex-direction:column;gap:14px;
   }
-  .upload-left::before{
-    content:'';position:absolute;top:-60px;right:-60px;
-    width:300px;height:300px;border-radius:50%;
-    background:radial-gradient(circle,rgba(74,111,165,0.07),transparent 70%);
-    pointer-events:none;
+  .upload-title{
+    font-family:'Lora',serif;font-size:15px;font-weight:600;
+    color:var(--text2);letter-spacing:-0.1px;margin-bottom:2px;
   }
-  .upload-right{
-    display:flex;flex-direction:column;
-    padding:52px 56px 52px 48px;
-    gap:14px;overflow-y:auto;background:var(--bg);
-  }
-
-  .eyebrow{
-    font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);
-    display:flex;align-items:center;gap:10px;margin-bottom:20px;font-weight:600;
-  }
-  .eyebrow::before{content:'';width:18px;height:1px;background:var(--accent);opacity:0.5}
-
-  h1{
-    font-family:'Lora',serif;
-    font-size:clamp(32px,3.8vw,52px);
-    font-weight:700;line-height:1.05;color:var(--text);letter-spacing:-0.5px;
-    margin-bottom:18px;
-  }
-  h1 em{font-style:italic;color:var(--accent);font-weight:400}
-
-  .hero-desc{
-    font-size:12px;line-height:2;color:var(--muted);
-    margin-bottom:36px;max-width:380px;font-weight:400;
-  }
-
-  .feature-list{display:flex;flex-direction:column;border-top:1px solid var(--border)}
-  .feat-item{
-    display:flex;align-items:center;gap:10px;padding:11px 0;
-    border-bottom:1px solid var(--border);
-    font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);
-  }
-  .feat-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 5px rgba(74,111,165,0.4)}
 
   /* ── DROP ZONE ── */
   .drop{
     border:1.5px dashed var(--border2);background:var(--surf);
     border-radius:var(--r-lg);padding:36px 28px;text-align:center;
     cursor:pointer;transition:all .3s;
-    min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;
     position:relative;overflow:hidden;
     box-shadow:0 2px 12px rgba(74,111,165,0.05);
   }
-  .drop::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(74,111,165,0.02),transparent);pointer-events:none}
   .drop:hover,.drop.over{border-color:var(--accent);box-shadow:0 4px 24px rgba(74,111,165,0.12)}
-  .drop-icon{font-size:32px;margin-bottom:10px}
-  .drop-title{font-family:'Lora',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:5px}
-  .drop-sub{font-size:11px;color:var(--muted);letter-spacing:0.5px}
-  .drop-hint{margin-top:10px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2)}
-  .drop-compact{min-height:76px!important;padding:12px 18px!important;flex-direction:row!important;gap:10px;justify-content:center}
+  .drop-icon{font-size:28px;margin-bottom:8px}
+  .drop-title{font-family:'Lora',serif;font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px}
+  .drop-hint{margin-top:6px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2)}
+  .drop-compact{min-height:72px!important;padding:12px 18px!important;flex-direction:row!important;gap:10px}
 
   /* ── THUMBNAILS ── */
   .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}
@@ -524,17 +476,16 @@ const css = `
 
   /* ── UPLOAD OPTS ── */
   .upload-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .upload-opt{display:flex;align-items:center;gap:11px;padding:13px 15px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);cursor:pointer;transition:all .2s;box-shadow:0 1px 4px rgba(74,111,165,0.04)}
+  .upload-opt{display:flex;align-items:center;gap:10px;padding:12px 15px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);cursor:pointer;transition:all .2s;box-shadow:0 1px 4px rgba(74,111,165,0.04)}
   .upload-opt:hover{border-color:var(--accent);background:rgba(74,111,165,0.03);box-shadow:0 4px 16px rgba(74,111,165,0.08)}
-  .upload-opt-icon{font-size:18px;flex-shrink:0}
+  .upload-opt-icon{font-size:16px;flex-shrink:0}
   .upload-opt-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);font-weight:600}
-  .upload-opt-sub{font-size:10px;color:var(--muted);margin-top:2px}
 
   /* ── PRIMARY BUTTON ── */
   .btn-primary{
     font-family:'Source Code Pro',monospace;
     background:linear-gradient(135deg,var(--accent),var(--accent2));
-    color:#fff;width:100%;justify-content:center;padding:15px;
+    color:#fff;width:100%;justify-content:center;padding:14px;
     font-size:11px;letter-spacing:2.5px;text-transform:uppercase;font-weight:600;
     box-shadow:0 4px 20px rgba(74,111,165,0.3);
     border:none;cursor:pointer;border-radius:var(--r);
@@ -545,10 +496,10 @@ const css = `
   .btn-primary:disabled{opacity:.4;cursor:not-allowed}
 
   /* ── LOADING ── */
-  .loading-wrap{text-align:center;padding:36px 16px}
-  .loading-ring{width:42px;height:42px;margin:0 auto 16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .8s linear infinite}
+  .loading-wrap{text-align:center;padding:28px 16px}
+  .loading-ring{width:38px;height:38px;margin:0 auto 14px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .loading-msg{font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:12px;text-transform:uppercase}
+  .loading-msg{font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;text-transform:uppercase}
   .progress-track{width:150px;margin:0 auto;height:2px;background:var(--border);border-radius:2px;overflow:hidden}
   .progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .6s ease}
 
@@ -565,8 +516,7 @@ const css = `
     display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
     box-shadow:0 1px 8px rgba(74,111,165,0.05);
   }
-  .res-eyebrow{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
-  .res-title{font-family:'Lora',serif;font-size:17px;font-weight:600;color:var(--text);letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55vw}
+  .res-title{font-family:'Lora',serif;font-size:16px;font-weight:600;color:var(--text);letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60vw}
 
   .result-split{flex:1;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;min-height:0}
 
@@ -660,20 +610,13 @@ const css = `
 
   /* ── FOOTER ── */
   .dl-err{flex-shrink:0;background:rgba(192,54,74,0.05);border:1px solid rgba(192,54,74,0.18);border-radius:var(--r);padding:7px 14px;color:var(--red);font-size:10px;margin:6px 24px}
-  .footer{flex-shrink:0;padding:11px 32px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;background:var(--surf)}
+  .footer{flex-shrink:0;padding:10px 32px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surf)}
   .footer-brand{font-family:'Lora',serif;font-size:13px;font-weight:600;color:var(--text2)}
   .footer-brand span{color:var(--accent)}
-  .footer-meta{font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted2)}
-
-  .reveal{opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .55s ease}
-  .reveal.in{opacity:1;transform:none}
 
   /* ── RESPONSIVE ── */
   @media(max-width:900px){
-    .upload-page{grid-template-columns:1fr;min-height:auto}
-    .upload-left{padding:40px 28px;border-right:none;border-bottom:1px solid var(--border)}
-    .upload-right{padding:32px 28px 56px}
-    .feature-list{display:none}
+    .upload-page{padding:32px 20px 56px}
     .result-page{height:auto;overflow:visible}
     .result-split{grid-template-columns:1fr;height:auto;overflow:visible}
     .result-panel{height:auto;overflow:visible;border-right:none;border-bottom:1px solid var(--border)}
@@ -682,15 +625,12 @@ const css = `
     .notes-scroll{max-height:420px;overflow-y:auto}
   }
   @media(max-width:600px){
-    :root{--nav-h:50px}
-    .brand-sub{display:none}
-    .brand-name{font-size:17px}
+    :root{--nav-h:48px}
+    .brand-name{font-size:16px}
     .topnav{padding:0 16px}
-    h1{font-size:clamp(26px,8vw,36px)}
-    .upload-left{padding:28px 16px}
-    .upload-right{padding:24px 16px 48px}
+    .upload-page{padding:24px 16px 48px}
     .upload-opts{grid-template-columns:1fr}
-    .drop{min-height:150px;padding:26px 14px}
+    .drop{min-height:130px;padding:24px 14px}
     .res-topbar{padding:8px 16px}
     .panel-hdr{padding:7px 14px;flex-wrap:wrap}
     .panel-actions{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
@@ -704,8 +644,6 @@ const css = `
   }
   @media(min-width:1400px){
     .topnav,.res-topbar,.footer{padding-left:52px;padding-right:52px}
-    .upload-left{padding:80px 60px 80px 64px}
-    .upload-right{padding:60px 64px 60px 56px}
     .panel-hdr{padding:10px 28px}
     .notes-ta,.notes-prev{padding:28px 36px}
   }
@@ -728,7 +666,6 @@ export default function App() {
   const [flowEdges, setFlowEdges] = useState([]);
   const [dlError, setDlError] = useState("");
   const [dlBusy, setDlBusy] = useState("");
-  const [revealed, setRevealed] = useState(false);
 
   const galleryRef = useRef();
   const cameraRef  = useRef();
@@ -736,11 +673,6 @@ export default function App() {
   const flowCardRef  = useRef();
 
   const BACKEND_URL = "https://inkparse-backend.onrender.com";
-
-  useEffect(() => {
-    const t = setTimeout(() => setRevealed(true), 80);
-    return () => clearTimeout(t);
-  }, []);
 
   const readImageFile = file => new Promise(resolve => {
     if (!file || !file.type.startsWith("image/")) return resolve(null);
@@ -768,7 +700,7 @@ export default function App() {
   const analyze = async () => {
     if (!images.length) return;
     setLoading(true); setError(""); setDlError(""); setLoadPct(0);
-    const stages = [[0,"Transmitting images…"],[20,"Decoding handwriting…"],[48,"Structuring content…"],[72,"Building flow diagram…"],[90,"Finalising…"]];
+    const stages = [[0,"Transmitting…"],[20,"Decoding handwriting…"],[48,"Structuring content…"],[72,"Building diagram…"],[90,"Finalising…"]];
     let mi = 0;
     const tick = setInterval(() => {
       if (mi < stages.length) { setLoadMsg(stages[mi][1]); setLoadPct(stages[mi][0]); mi++; }
@@ -862,50 +794,30 @@ export default function App() {
     setFlowEdges([]); setError(""); setDlError(""); setTitle(""); setLoadPct(0);
   };
 
-  const year = new Date().getFullYear();
-
   return (
     <>
       <style>{css}</style>
       <div className={`app${step === "result" ? " result-mode" : ""}`}>
 
+        {/* ── NAV ── */}
         <nav className="topnav">
           <div className="brand">
             <div className="brand-logo">📄</div>
-            <div>
-              <div className="brand-name">Note<span>Forge</span></div>
-              <div className="brand-sub">Handwriting Intelligence</div>
-            </div>
+            <div className="brand-name">NoteForge</div>
           </div>
           <div className="nav-right">
-            {step === "result" && <button className="btn-ghost" onClick={reset}>↩ New Upload</button>}
+            {step === "result" && <button className="btn-ghost" onClick={reset}>↩ New</button>}
             <div className="status-dot" />
-            <div className="nav-meta">v2 · {year}</div>
           </div>
         </nav>
 
+        {/* ── UPLOAD ── */}
         {step === "upload" && (
-          <div className={`upload-page reveal ${revealed ? "in" : ""}`}>
+          <div className="upload-page">
             <input ref={galleryRef} type="file" accept="image/*" multiple style={{ display:"none" }} onChange={onGalleryChange} />
             <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={onCameraChange} />
 
-            <div className="upload-left">
-              <div className="eyebrow">AI-Powered Notes Reader</div>
-              <h1>Raw notes,<br /><em>instantly structured.</em></h1>
-              <p className="hero-desc">
-                Photograph any handwritten notes — messy, rotated, multi-page — and get
-                clean structured text plus an interactive flowchart. In seconds.
-              </p>
-              <div className="feature-list">
-                <div className="feat-item"><span className="feat-dot" />Any handwriting style</div>
-                <div className="feat-item"><span className="feat-dot" />Multi-page support</div>
-                <div className="feat-item"><span className="feat-dot" />Auto flowchart generation</div>
-                <div className="feat-item"><span className="feat-dot" />Export JPG · DOCX · SVG</div>
-                <div className="feat-item"><span className="feat-dot" />Fully editable diagram</div>
-              </div>
-            </div>
-
-            <div className="upload-right">
+            <div className="upload-well">
               <div
                 className={`drop ${dragOver?"over":""} ${images.length?"drop-compact":""}`}
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -916,15 +828,13 @@ export default function App() {
                 {images.length === 0 ? (
                   <>
                     <span className="drop-icon">📓</span>
-                    <div className="drop-title">Drop images here</div>
-                    <div className="drop-sub">or click to browse files</div>
-                    <div className="drop-hint">JPG · PNG · WEBP · Select multiple files</div>
+                    <div className="drop-title">Drop images here, or click to upload</div>
+                    <div className="drop-hint">JPG · PNG · WEBP · Multiple files supported</div>
                   </>
                 ) : (
                   <>
-                    <span className="drop-icon" style={{ fontSize:20, marginBottom:3 }}>＋</span>
-                    <div className="drop-title" style={{ fontSize:13 }}>Add more pages</div>
-                    <div className="drop-sub">{images.length} page{images.length > 1 ? "s" : ""} ready</div>
+                    <span className="drop-icon" style={{ fontSize:18, marginBottom:0 }}>＋</span>
+                    <div className="drop-title" style={{ fontSize:13 }}>Add pages &nbsp;·&nbsp; {images.length} loaded</div>
                   </>
                 )}
               </div>
@@ -944,17 +854,11 @@ export default function App() {
               <div className="upload-opts">
                 <button className="upload-opt" onClick={e => { e.stopPropagation(); galleryRef.current.click(); }}>
                   <span className="upload-opt-icon">🖼</span>
-                  <div>
-                    <div className="upload-opt-label">Upload Files</div>
-                    <div className="upload-opt-sub">select multiple at once</div>
-                  </div>
+                  <div className="upload-opt-label">Upload Files</div>
                 </button>
                 <button className="upload-opt" onClick={e => { e.stopPropagation(); cameraRef.current.click(); }}>
                   <span className="upload-opt-icon">📷</span>
-                  <div>
-                    <div className="upload-opt-label">Take Photo</div>
-                    <div className="upload-opt-sub">use camera</div>
-                  </div>
+                  <div className="upload-opt-label">Take Photo</div>
                 </button>
               </div>
 
@@ -966,7 +870,7 @@ export default function App() {
                 </div>
               ) : (
                 <button className="btn-primary" disabled={!images.length || loading} onClick={analyze}>
-                  ⚡ {images.length > 1 ? `Analyse ${images.length} Pages` : "Analyse & Structure Notes"}
+                  {images.length > 1 ? `Process ${images.length} pages` : "Process"}
                 </button>
               )}
 
@@ -975,14 +879,12 @@ export default function App() {
           </div>
         )}
 
+        {/* ── RESULT ── */}
         {step === "result" && (
           <div className="result-page">
             <div className="res-topbar">
-              <div>
-                <div className="res-eyebrow">Structured from {images.length} image{images.length > 1 ? "s" : ""}</div>
-                <div className="res-title">{title}</div>
-              </div>
-              <button className="btn-ghost" onClick={reset}>↩ New Upload</button>
+              <div className="res-title">{title}</div>
+              <button className="btn-ghost" onClick={reset}>↩ New</button>
             </div>
 
             <div className="result-split">
@@ -1010,7 +912,6 @@ export default function App() {
                 <div className="panel-hdr">
                   <div className="panel-label">Flow Diagram</div>
                   <div className="panel-actions">
-                    <span style={{ fontSize:8, letterSpacing:2, textTransform:"uppercase", color:"var(--muted2)" }}>Interactive</span>
                     <button className="dl-btn dl-jpg" disabled={dlBusy==="diag-jpg"} onClick={dlDiagramJpg}>{dlBusy==="diag-jpg"?"…":"🖼 JPG"}</button>
                     <button className="dl-btn dl-svg" onClick={dlDiagramSvg}>◈ SVG</button>
                   </div>
@@ -1026,8 +927,7 @@ export default function App() {
         )}
 
         <footer className="footer">
-          <div className="footer-brand">Note<span>Forge</span> — Handwriting to knowledge</div>
-          <div className="footer-meta">AI Powered · {year}</div>
+          <div className="footer-brand">Note<span>Forge</span></div>
         </footer>
       </div>
     </>
