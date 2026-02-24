@@ -433,7 +433,6 @@ const css = `
     --nav-h:56px;
   }
 
-  /* ── CRITICAL FULL-WIDTH FIXES ── */
   html {
     width: 100%;
     max-width: none !important;
@@ -483,13 +482,6 @@ const css = `
     box-shadow:0 1px 12px rgba(74,111,165,0.07);
   }
   .brand{display:flex;align-items:center;gap:10px}
-  .brand-logo{
-    width:32px;height:32px;border-radius:8px;flex-shrink:0;
-    border:1px solid var(--border2);
-    background:linear-gradient(135deg,#EEF3FB,#D8E4F5);
-    display:flex;align-items:center;justify-content:center;font-size:15px;
-    box-shadow:0 2px 8px rgba(74,111,165,0.1);
-  }
   .brand-name{font-family:'Lora',serif;font-size:18px;font-weight:700;color:var(--text);letter-spacing:-0.3px}
   .nav-right{display:flex;align-items:center;gap:10px}
   .status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 0 2px rgba(46,125,82,0.2)}
@@ -516,13 +508,6 @@ const css = `
 
   .upload-hero{
     text-align:center;margin-bottom:36px;
-  }
-  .upload-hero-icon{
-    width:64px;height:64px;margin:0 auto 16px;
-    background:linear-gradient(135deg,#EEF3FB,#D8E4F5);
-    border:1px solid var(--border2);border-radius:16px;
-    display:flex;align-items:center;justify-content:center;font-size:28px;
-    box-shadow:0 4px 20px rgba(74,111,165,0.12);
   }
   .upload-hero h1{font-family:'Lora',serif;font-size:clamp(22px,5vw,36px);font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.2}
   .upload-hero p{font-size:12px;color:var(--muted);letter-spacing:0.5px;line-height:1.7;max-width:460px;margin:0 auto}
@@ -576,9 +561,7 @@ const css = `
   }
   .upload-opt:hover{border-color:var(--accent);background:rgba(74,111,165,0.03);box-shadow:0 4px 20px rgba(74,111,165,0.1);transform:translateY(-1px)}
   .upload-opt:active{transform:translateY(0)}
-  .upload-opt-icon{font-size:18px;flex-shrink:0}
   .upload-opt-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);font-weight:600;display:block}
-  .upload-opt-desc{font-size:9px;color:var(--muted);display:block;margin-top:1px}
 
   /* ── PRIMARY BUTTON ── */
   .btn-primary{
@@ -624,6 +607,26 @@ const css = `
   }
   .res-title{font-family:'Lora',serif;font-size:16px;font-weight:600;color:var(--text);letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60vw}
 
+  /* ── MOBILE TAB BAR ── */
+  .mobile-tabs{
+    display:none;
+    flex-shrink:0;
+    background:var(--surf);
+    border-bottom:1px solid var(--border);
+    padding:0 16px;
+  }
+  .mobile-tab{
+    flex:1;
+    font-family:'Source Code Pro',monospace;
+    font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:600;
+    padding:12px 8px;border:none;background:transparent;
+    color:var(--muted);cursor:pointer;
+    border-bottom:2px solid transparent;
+    transition:all .2s;
+  }
+  .mobile-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+  /* ── SPLIT / PANELS ── */
   .result-split{
     flex:1;
     width: 100%;
@@ -732,34 +735,54 @@ const css = `
   .section-divider{display:flex;align-items:center;gap:12px;color:var(--muted2);font-size:9px;letter-spacing:2px;text-transform:uppercase;margin:4px 0}
   .section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border)}
 
-  /* ── RESPONSIVE ── */
+  /* ── TABLET (1024px and below) ── */
   @media(max-width:1024px){
     .result-split{grid-template-columns:1fr 1fr}
-    .result-page{height:auto;overflow:visible}
-    .diagram-body{height:380px}
-    .notes-scroll{max-height:380px;overflow-y:auto}
   }
 
+  /* ── MOBILE (768px and below) ── key fix: single column + tabs ── */
   @media(max-width:768px){
     :root{--nav-h:52px}
     .topnav{padding:0 16px}
+
+    /* Upload page */
     .upload-page{padding:28px 16px 48px;justify-content:flex-start;padding-top:40px}
     .upload-hero{margin-bottom:28px}
-    .upload-hero-icon{width:52px;height:52px;font-size:22px}
     .upload-well{max-width:100%}
 
-    .result-page{height:auto;overflow:visible}
-    .app.result-mode{height:auto;overflow:visible}
-    .result-split{grid-template-columns:1fr;height:auto;overflow:visible}
-    .result-panel{height:auto;overflow:visible;border-right:none;border-bottom:1px solid var(--border)}
-    .result-panel:last-child{border-bottom:none}
-    .diagram-body{height:420px}
-    .notes-scroll{max-height:400px;overflow-y:auto}
+    /* Result: full height scrollable, single column */
+    .app.result-mode{height:100vh;overflow:hidden}
+    .result-page{height:calc(100vh - var(--nav-h));overflow:hidden;display:flex;flex-direction:column}
+
+    /* Show mobile tabs */
+    .mobile-tabs{display:flex}
+
+    /* Single column panels, each fills remaining space */
+    .result-split{
+      grid-template-columns:1fr;
+      grid-template-rows:1fr;
+      flex:1;
+      overflow:hidden;
+    }
+
+    /* Hide/show panels based on active tab */
+    .result-panel{
+      border-right:none;
+      border-bottom:none;
+      height:100%;
+    }
+    .result-panel.panel-hidden{display:none}
+
+    /* Notes area fills height */
+    .notes-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+    /* Diagram fills height */
+    .diagram-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
 
     .res-topbar{padding:8px 16px}
-    .res-title{font-size:14px;max-width:55vw}
+    .res-title{font-size:14px;max-width:65vw}
     .panel-hdr{padding:8px 14px}
-    .panel-actions{gap:4px;overflow-x:auto;padding-bottom:2px}
+    .panel-actions{gap:4px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
     .dl-btn,.toggle-btn{flex-shrink:0}
 
     .fe-toolbar{overflow-x:auto;flex-wrap:nowrap;padding:5px 10px;-webkit-overflow-scrolling:touch}
@@ -768,6 +791,9 @@ const css = `
     .footer{padding:10px 16px}
     .dl-err{margin:5px 12px}
     .notes-ta,.notes-prev{padding:16px 18px}
+
+    /* Touch-friendly delete buttons always visible on mobile */
+    .img-thumb-del{opacity:1}
   }
 
   @media(max-width:480px){
@@ -780,11 +806,8 @@ const css = `
     .btn-primary{padding:14px;font-size:10px}
     .upload-hero h1{font-size:22px}
     .upload-hero p{font-size:11px}
-    .result-split{grid-template-columns:1fr}
-    .diagram-body{height:360px}
-    .notes-scroll{max-height:340px}
     .panel-hdr{flex-wrap:wrap}
-    .res-title{font-size:13px}
+    .res-title{font-size:13px;max-width:55vw}
   }
 
   @media(min-width:1400px){
@@ -797,7 +820,6 @@ const css = `
     .btn-primary:hover:not(:disabled){transform:none}
     .upload-opt:hover{transform:none}
     .drop:hover{transform:none}
-    .img-thumb-del{opacity:1}
   }
 `;
 
@@ -817,6 +839,8 @@ export default function App() {
   const [flowEdges, setFlowEdges] = useState([]);
   const [dlError, setDlError] = useState("");
   const [dlBusy, setDlBusy] = useState("");
+  // ← NEW: which tab is active on mobile
+  const [mobileTab, setMobileTab] = useState("notes");
 
   const galleryRef = useRef();
   const cameraRef  = useRef();
@@ -870,6 +894,7 @@ export default function App() {
       const { nodes: n, edges: e } = parseMermaidToGraph(code);
       setFlowNodes(n); setFlowEdges(e);
       setLoadPct(100);
+      setMobileTab("notes"); // reset to notes tab on new result
       setTimeout(() => setStep("result"), 300);
     } catch (err) {
       clearInterval(tick);
@@ -946,6 +971,7 @@ export default function App() {
   const reset = () => {
     setImages([]); setStep("upload"); setNotes(""); setFlowNodes({});
     setFlowEdges([]); setError(""); setDlError(""); setTitle(""); setLoadPct(0);
+    setMobileTab("notes");
   };
 
   return (
@@ -1051,13 +1077,34 @@ export default function App() {
         {/* ── RESULT ── */}
         {step === "result" && (
           <div className="result-page">
+            {/* Top bar */}
             <div className="res-topbar">
               <div className="res-title">{title}</div>
               <button className="btn-ghost" onClick={reset}>↩ New</button>
             </div>
 
+            {/* Mobile-only tab bar */}
+            <div className="mobile-tabs">
+              <button
+                className={`mobile-tab ${mobileTab === "notes" ? "active" : ""}`}
+                onClick={() => setMobileTab("notes")}
+              >
+                📝 Notes
+              </button>
+              <button
+                className={`mobile-tab ${mobileTab === "diagram" ? "active" : ""}`}
+                onClick={() => setMobileTab("diagram")}
+              >
+                🔀 Diagram
+              </button>
+            </div>
+
             <div className="result-split">
-              <div className="result-panel" ref={notesCardRef}>
+              {/* Notes panel */}
+              <div
+                className={`result-panel ${mobileTab !== "notes" ? "panel-hidden" : ""}`}
+                ref={notesCardRef}
+              >
                 <div className="panel-hdr">
                   <div className="panel-label">Extracted Notes</div>
                   <div className="panel-actions">
@@ -1077,7 +1124,11 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="result-panel" ref={flowCardRef}>
+              {/* Diagram panel */}
+              <div
+                className={`result-panel ${mobileTab !== "diagram" ? "panel-hidden" : ""}`}
+                ref={flowCardRef}
+              >
                 <div className="panel-hdr">
                   <div className="panel-label">Flow Diagram</div>
                   <div className="panel-actions">
