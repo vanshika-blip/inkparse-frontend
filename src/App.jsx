@@ -93,21 +93,21 @@ async function makeDocxBlob(title, notes) {
   return Packer.toBlob(doc);
 }
 
-// ── NODE COLORS ───────────────────────────────────────────────
+// ── NODE COLORS — light paper palette ────────────────────────
 const NODE_COLORS = [
-  { fill: "#0D1F2D", stroke: "#00D4FF", text: "#E0F8FF", glow: "rgba(0,212,255,0.4)" },
-  { fill: "#1A0D2E", stroke: "#9D4EDD", text: "#F0E8FF", glow: "rgba(157,78,221,0.4)" },
-  { fill: "#0D2218", stroke: "#00FF87", text: "#E0FFE8", glow: "rgba(0,255,135,0.4)" },
-  { fill: "#2E1A00", stroke: "#FF9500", text: "#FFF3E0", glow: "rgba(255,149,0,0.4)" },
-  { fill: "#2E000D", stroke: "#FF2D55", text: "#FFE0E8", glow: "rgba(255,45,85,0.4)" },
-  { fill: "#0D1E2E", stroke: "#0A84FF", text: "#E0F0FF", glow: "rgba(10,132,255,0.4)" },
+  { fill: "#EEF3FB", stroke: "#4A6FA5", text: "#1A2235", glow: "rgba(74,111,165,0.25)" },
+  { fill: "#F0EAF8", stroke: "#7C5CBF", text: "#1A1230", glow: "rgba(124,92,191,0.25)" },
+  { fill: "#E8F5EE", stroke: "#2E7D52", text: "#0D2B1A", glow: "rgba(46,125,82,0.25)" },
+  { fill: "#FFF4E6", stroke: "#C07030", text: "#2B1800", glow: "rgba(192,112,48,0.25)" },
+  { fill: "#FDE8EC", stroke: "#C0364A", text: "#2B000D", glow: "rgba(192,54,74,0.25)" },
+  { fill: "#E6F2FF", stroke: "#2E6FA5", text: "#002235", glow: "rgba(46,111,165,0.25)" },
 ];
 const NW = 160, NH = 50;
 function getNodeColor(id, nodes) {
   return NODE_COLORS[Object.keys(nodes).indexOf(id) % NODE_COLORS.length];
 }
 
-// ── FLOW EDITOR ───────────────────────────────────────────────────────────────
+// ── FLOW EDITOR ───────────────────────────────────────────────
 function FlowEditor({ nodes, edges, onChange }) {
   const svgRef = useRef();
   const [selNode, setSelNode] = useState(null);
@@ -162,7 +162,6 @@ function FlowEditor({ nodes, edges, onChange }) {
     setZoom(z => Math.max(0.2, Math.min(3, z - e.deltaY * 0.001)));
   };
 
-  // Touch pinch-to-zoom + pan
   const touchRef = useRef(null);
   const onTouchStart = e => {
     if (e.touches.length === 1) {
@@ -171,7 +170,7 @@ function FlowEditor({ nodes, edges, onChange }) {
     } else if (e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
-      touchRef.current = { type: "pinch", dist: Math.sqrt(dx * dx + dy * dy), z: zoom };
+      touchRef.current = { type: "pinch", dist: Math.sqrt(dx*dx+dy*dy), z: zoom };
     }
   };
   const onTouchMove = e => {
@@ -183,7 +182,7 @@ function FlowEditor({ nodes, edges, onChange }) {
     } else if (touchRef.current.type === "pinch" && e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      const dist = Math.sqrt(dx*dx+dy*dy);
       setZoom(Math.max(0.2, Math.min(3, touchRef.current.z * (dist / touchRef.current.dist))));
     }
   };
@@ -191,34 +190,29 @@ function FlowEditor({ nodes, edges, onChange }) {
 
   const addNode = () => {
     const id = "N" + Date.now();
-    onChange({ ...nodesR.current, [id]: { id, label: "New Node", shape: "rect", x: 200 + Math.random() * 120, y: 200 + Math.random() * 120 } }, edgesR.current);
+    onChange({ ...nodesR.current, [id]: { id, label: "New Node", shape: "rect", x: 200 + Math.random()*120, y: 200 + Math.random()*120 } }, edgesR.current);
     setSelNode(id);
   };
-
   const deleteNode = id => {
     const u = { ...nodesR.current }; delete u[id];
     onChange(u, edgesR.current.filter(e => e.from !== id && e.to !== id));
     setSelNode(null);
   };
-
-  const deleteEdge = i => { onChange(nodesR.current, edgesR.current.filter((_, j) => j !== i)); setSelEdge(null); };
-
+  const deleteEdge = i => { onChange(nodesR.current, edgesR.current.filter((_,j) => j !== i)); setSelEdge(null); };
   const saveEdit = () => {
     if (!editPopup) return;
     if (editPopup.type === "node") onChange({ ...nodesR.current, [editPopup.id]: { ...nodesR.current[editPopup.id], label: editPopup.label } }, edgesR.current);
-    else onChange(nodesR.current, edgesR.current.map((e, i) => i === editPopup.id ? { ...e, label: editPopup.label } : e));
+    else onChange(nodesR.current, edgesR.current.map((e,i) => i === editPopup.id ? { ...e, label: editPopup.label } : e));
     setEditPopup(null);
   };
+  const nodeCenter = n => ({ x: n.x + NW/2, y: n.y + NH/2 });
 
-  const nodeCenter = n => ({ x: n.x + NW / 2, y: n.y + NH / 2 });
-
-  // Compute canvas size from node positions so scroll area is always big enough
   const allNodes = Object.values(nodes);
   const canvasW = Math.max(1200, ...allNodes.map(n => n.x + NW + 120));
-  const canvasH = Math.max(900,  ...allNodes.map(n => n.y + NH + 120));
+  const canvasH = Math.max(900, ...allNodes.map(n => n.y + NH + 120));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+    <div style={{ display:"flex", flexDirection:"column", height:"100%", minHeight:0 }}>
       <div className="fe-toolbar">
         <button className="fe-btn" onClick={addNode}>＋ Node</button>
         {selNode && <>
@@ -232,128 +226,122 @@ function FlowEditor({ nodes, edges, onChange }) {
             <option value="round">◉ Pill</option>
             <option value="diamond">◇ Diamond</option>
           </select>
-          <button className="fe-btn fe-btn-edit" onClick={() => setEditPopup({ type: "node", id: selNode, label: nodes[selNode]?.label || "" })}>✎ Rename</button>
+          <button className="fe-btn fe-btn-edit" onClick={() => setEditPopup({ type:"node", id:selNode, label:nodes[selNode]?.label||"" })}>✎ Rename</button>
           <button className="fe-btn fe-btn-del" onClick={() => deleteNode(selNode)}>✕ Del</button>
         </>}
         {selEdge !== null && !selNode && (
-          <button className="fe-btn fe-btn-edit" onClick={() => setEditPopup({ type: "edge", id: selEdge, label: edges[selEdge]?.label || "" })}>✎ Label</button>
+          <button className="fe-btn fe-btn-edit" onClick={() => setEditPopup({ type:"edge", id:selEdge, label:edges[selEdge]?.label||"" })}>✎ Label</button>
         )}
         {connecting && <span className="fe-hint">→ click target node</span>}
-        <div style={{ flex: 1 }} />
-        <button className="fe-btn fe-zoom-btn" onClick={() => setZoom(z => Math.min(3, z + 0.15))}>＋</button>
-        <span className="fe-zoom">{Math.round(zoom * 100)}%</span>
-        <button className="fe-btn fe-zoom-btn" onClick={() => setZoom(z => Math.max(0.2, z - 0.15))}>－</button>
-        <button className="fe-btn" onClick={() => { setZoom(0.85); setPan({ x: 40, y: 30 }); }}>⊡</button>
+        <div style={{ flex:1 }} />
+        <button className="fe-btn fe-zoom-btn" onClick={() => setZoom(z => Math.min(3, z+0.15))}>＋</button>
+        <span className="fe-zoom">{Math.round(zoom*100)}%</span>
+        <button className="fe-btn fe-zoom-btn" onClick={() => setZoom(z => Math.max(0.2, z-0.15))}>－</button>
+        <button className="fe-btn" onClick={() => { setZoom(0.85); setPan({x:40,y:30}); }}>⊡</button>
       </div>
 
       <div className="diagram-body">
-      <svg
-        ref={svgRef}
-        width={canvasW}
-        height={canvasH}
-        style={{ display: "block", cursor: panningSt ? "grabbing" : connecting ? "crosshair" : "grab", background: "transparent", touchAction: "none" }}
-        onMouseDown={onSvgMD} onMouseMove={onMM} onMouseUp={onMU} onWheel={onWheel}
-        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-      >
-        <defs>
-          <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0,10 3.5,0 7" fill="#00D4FF" opacity="0.6" />
-          </marker>
-          <marker id="arr-sel" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0,10 3.5,0 7" fill="#00FF87" />
-          </marker>
-          <pattern id="dotgrid" width="30" height="30" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="1" fill="rgba(0,212,255,0.07)" />
-          </pattern>
-        </defs>
-        <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
-          <rect x="-5000" y="-5000" width="20000" height="20000" fill="url(#dotgrid)" />
-          {/* Edges */}
-          {edges.map((e, i) => {
-            const from = nodes[e.from], to = nodes[e.to];
-            if (!from || !to) return null;
-            const f = nodeCenter(from), t = nodeCenter(to);
-            const dx = t.x - f.x, dy = t.y - f.y, len = Math.sqrt(dx * dx + dy * dy) || 1;
-            const ux = dx / len, uy = dy / len;
-            const sx = f.x + ux * NW * 0.52, sy = f.y + uy * NH * 0.52;
-            const ex = t.x - ux * NW * 0.52, ey = t.y - uy * NH * 0.52;
-            const mx = (sx + ex) / 2 - uy * 30, my = (sy + ey) / 2 + ux * 30;
-            const isSel = selEdge === i;
-            const midX = (sx + 2 * mx + ex) / 4, midY = (sy + 2 * my + ey) / 4;
-            return (
-              <g key={i} onClick={ev => { ev.stopPropagation(); setSelEdge(i); setSelNode(null); }}>
-                <path d={`M${sx},${sy} Q${mx},${my} ${ex},${ey}`}
-                  stroke={isSel ? "#00FF87" : "#00D4FF"} strokeWidth={isSel ? 2 : 1.5} fill="none"
-                  markerEnd={isSel ? "url(#arr-sel)" : "url(#arr)"}
-                  strokeDasharray={isSel ? "6 3" : "none"} opacity={isSel ? 1 : 0.45}
-                  style={{ cursor: "pointer" }} />
-                <path d={`M${sx},${sy} Q${mx},${my} ${ex},${ey}`} stroke="transparent" strokeWidth={16} fill="none" style={{ cursor: "pointer" }} />
-                {e.label && (
-                  <g onDoubleClick={ev => { ev.stopPropagation(); setEditPopup({ type: "edge", id: i, label: e.label }); }}>
-                    <rect x={midX - e.label.length * 3 - 8} y={midY - 9} width={e.label.length * 6 + 16} height={18} rx={9}
-                      fill="#0A0F1A" stroke={isSel ? "#00FF87" : "#00D4FF"} strokeWidth={1} />
-                    <text x={midX} y={midY + 1} textAnchor="middle" dominantBaseline="middle"
-                      fill="#00D4FF" fontSize={9} fontFamily="'DM Mono',monospace" letterSpacing="1">{e.label}</text>
-                  </g>
-                )}
-                {isSel && (
-                  <g style={{ cursor: "pointer" }} onClick={ev => { ev.stopPropagation(); deleteEdge(i); }}>
-                    <circle cx={midX} cy={midY} r={10} fill="#FF2D55" stroke="#FF6B84" strokeWidth={1.5} />
-                    <text x={midX} y={midY + 1} textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={12} style={{ pointerEvents: "none" }}>✕</text>
-                  </g>
-                )}
-              </g>
-            );
-          })}
-          {/* Connect line */}
-          {connecting && nodes[connecting] && (
-            <line x1={nodeCenter(nodes[connecting]).x} y1={nodeCenter(nodes[connecting]).y}
-              x2={mousePos.x} y2={mousePos.y}
-              stroke="#00FF87" strokeWidth={1.5} strokeDasharray="5 3" opacity={0.7} style={{ pointerEvents: "none" }} />
-          )}
-          {/* Nodes */}
-          {Object.values(nodes).map(n => {
-            const col = getNodeColor(n.id, nodes);
-            const sel = selNode === n.id;
-            const { x, y } = n;
-            return (
-              <g key={n.id}
-                onMouseDown={e => onNodeMD(e, n.id, "")}
-                onDoubleClick={e => { e.stopPropagation(); setEditPopup({ type: "node", id: n.id, label: n.label }); }}
-                style={{ cursor: "move" }}>
-                {n.shape === "diamond" ? (
-                  <polygon points={`${x + NW / 2},${y - 4} ${x + NW + 4},${y + NH / 2} ${x + NW / 2},${y + NH + 4} ${x - 4},${y + NH / 2}`}
-                    fill={col.fill} stroke={sel ? col.text : col.stroke} strokeWidth={sel ? 2 : 1}
-                    filter={sel ? `drop-shadow(0 0 10px ${col.glow})` : "none"} />
-                ) : n.shape === "round" ? (
-                  <rect x={x} y={y} width={NW} height={NH} rx={NH / 2}
-                    fill={col.fill} stroke={sel ? col.text : col.stroke} strokeWidth={sel ? 2 : 1}
-                    filter={sel ? `drop-shadow(0 0 10px ${col.glow})` : "none"} />
-                ) : (
-                  <rect x={x} y={y} width={NW} height={NH} rx={6}
-                    fill={col.fill} stroke={sel ? col.text : col.stroke} strokeWidth={sel ? 2 : 1}
-                    filter={sel ? `drop-shadow(0 0 10px ${col.glow})` : "none"} />
-                )}
-                <rect x={x} y={y} width={3} height={NH} rx={2} fill={col.stroke} opacity={0.8} style={{ pointerEvents: "none" }} />
-                <text x={x + NW / 2} y={y + NH / 2 + 1} textAnchor="middle" dominantBaseline="middle"
-                  fill={col.text} fontSize={10} fontFamily="'DM Mono',monospace" fontWeight="500" letterSpacing="0.5"
-                  style={{ pointerEvents: "none", userSelect: "none" }}>
-                  {n.label.length > 22 ? n.label.slice(0, 20) + "…" : n.label}
-                </text>
-                {sel && (
-                  <circle cx={x + NW} cy={y + NH / 2} r={7} fill={col.stroke} stroke={col.text} strokeWidth={1.5}
-                    style={{ cursor: "crosshair" }}
-                    onMouseDown={e => { e.stopPropagation(); onNodeMD(e, n.id, "connect"); }} />
-                )}
-              </g>
-            );
-          })}
-        </g>
-      </svg>
+        <svg ref={svgRef} width={canvasW} height={canvasH}
+          style={{ display:"block", cursor: panningSt?"grabbing":connecting?"crosshair":"grab", background:"transparent", touchAction:"none" }}
+          onMouseDown={onSvgMD} onMouseMove={onMM} onMouseUp={onMU} onWheel={onWheel}
+          onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+        >
+          <defs>
+            <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0,10 3.5,0 7" fill="#4A6FA5" opacity="0.7" />
+            </marker>
+            <marker id="arr-sel" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0,10 3.5,0 7" fill="#2E4F80" />
+            </marker>
+            <pattern id="dotgrid" width="28" height="28" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="1" fill="rgba(74,111,165,0.1)" />
+            </pattern>
+          </defs>
+          <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
+            <rect x="-5000" y="-5000" width="20000" height="20000" fill="url(#dotgrid)" />
+            {edges.map((e,i) => {
+              const from = nodes[e.from], to = nodes[e.to];
+              if (!from||!to) return null;
+              const f = nodeCenter(from), t = nodeCenter(to);
+              const dx = t.x-f.x, dy = t.y-f.y, len = Math.sqrt(dx*dx+dy*dy)||1;
+              const ux = dx/len, uy = dy/len;
+              const sx = f.x+ux*NW*0.52, sy = f.y+uy*NH*0.52;
+              const ex = t.x-ux*NW*0.52, ey = t.y-uy*NH*0.52;
+              const mx = (sx+ex)/2-uy*30, my = (sy+ey)/2+ux*30;
+              const isSel = selEdge===i;
+              const midX = (sx+2*mx+ex)/4, midY = (sy+2*my+ey)/4;
+              return (
+                <g key={i} onClick={ev => { ev.stopPropagation(); setSelEdge(i); setSelNode(null); }}>
+                  <path d={`M${sx},${sy} Q${mx},${my} ${ex},${ey}`}
+                    stroke={isSel?"#2E4F80":"#4A6FA5"} strokeWidth={isSel?2:1.5} fill="none"
+                    markerEnd={isSel?"url(#arr-sel)":"url(#arr)"}
+                    strokeDasharray={isSel?"6 3":"none"} opacity={isSel?1:0.6}
+                    style={{ cursor:"pointer" }} />
+                  <path d={`M${sx},${sy} Q${mx},${my} ${ex},${ey}`} stroke="transparent" strokeWidth={16} fill="none" style={{ cursor:"pointer" }} />
+                  {e.label && (
+                    <g onDoubleClick={ev => { ev.stopPropagation(); setEditPopup({ type:"edge", id:i, label:e.label }); }}>
+                      <rect x={midX-e.label.length*3-8} y={midY-9} width={e.label.length*6+16} height={18} rx={9}
+                        fill="#F7F8FC" stroke={isSel?"#2E4F80":"#4A6FA5"} strokeWidth={1} />
+                      <text x={midX} y={midY+1} textAnchor="middle" dominantBaseline="middle"
+                        fill="#4A6FA5" fontSize={9} fontFamily="'Source Code Pro',monospace" letterSpacing="1">{e.label}</text>
+                    </g>
+                  )}
+                  {isSel && (
+                    <g style={{ cursor:"pointer" }} onClick={ev => { ev.stopPropagation(); deleteEdge(i); }}>
+                      <circle cx={midX} cy={midY} r={10} fill="#C0364A" stroke="#E87A8A" strokeWidth={1.5} />
+                      <text x={midX} y={midY+1} textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={12} style={{ pointerEvents:"none" }}>✕</text>
+                    </g>
+                  )}
+                </g>
+              );
+            })}
+            {connecting && nodes[connecting] && (
+              <line x1={nodeCenter(nodes[connecting]).x} y1={nodeCenter(nodes[connecting]).y}
+                x2={mousePos.x} y2={mousePos.y}
+                stroke="#2E4F80" strokeWidth={1.5} strokeDasharray="5 3" opacity={0.6} style={{ pointerEvents:"none" }} />
+            )}
+            {Object.values(nodes).map(n => {
+              const col = getNodeColor(n.id, nodes);
+              const sel = selNode === n.id;
+              const { x, y } = n;
+              return (
+                <g key={n.id}
+                  onMouseDown={e => onNodeMD(e, n.id, "")}
+                  onDoubleClick={e => { e.stopPropagation(); setEditPopup({ type:"node", id:n.id, label:n.label }); }}
+                  style={{ cursor:"move" }}>
+                  {n.shape === "diamond" ? (
+                    <polygon points={`${x+NW/2},${y-4} ${x+NW+4},${y+NH/2} ${x+NW/2},${y+NH+4} ${x-4},${y+NH/2}`}
+                      fill={col.fill} stroke={col.stroke} strokeWidth={sel?2:1}
+                      filter={sel?`drop-shadow(0 0 8px ${col.glow})`:"none"} />
+                  ) : n.shape === "round" ? (
+                    <rect x={x} y={y} width={NW} height={NH} rx={NH/2}
+                      fill={col.fill} stroke={col.stroke} strokeWidth={sel?2:1}
+                      filter={sel?`drop-shadow(0 0 8px ${col.glow})`:"none"} />
+                  ) : (
+                    <rect x={x} y={y} width={NW} height={NH} rx={6}
+                      fill={col.fill} stroke={col.stroke} strokeWidth={sel?2:1}
+                      filter={sel?`drop-shadow(0 0 8px ${col.glow})`:"none"} />
+                  )}
+                  <rect x={x} y={y} width={3} height={NH} rx={2} fill={col.stroke} opacity={0.6} style={{ pointerEvents:"none" }} />
+                  <text x={x+NW/2} y={y+NH/2+1} textAnchor="middle" dominantBaseline="middle"
+                    fill={col.text} fontSize={10} fontFamily="'Source Code Pro',monospace" fontWeight="500" letterSpacing="0.5"
+                    style={{ pointerEvents:"none", userSelect:"none" }}>
+                    {n.label.length > 22 ? n.label.slice(0,20)+"…" : n.label}
+                  </text>
+                  {sel && (
+                    <circle cx={x+NW} cy={y+NH/2} r={7} fill={col.stroke} stroke="#fff" strokeWidth={1.5}
+                      style={{ cursor:"crosshair" }}
+                      onMouseDown={e => { e.stopPropagation(); onNodeMD(e, n.id, "connect"); }} />
+                  )}
+                </g>
+              );
+            })}
+          </g>
+        </svg>
       </div>
 
       <div className="fe-hint-bar">
-        Double-click to rename · Drag to move · Select → Link · <strong>Scroll / pinch to zoom</strong> · Drag background to pan
+        Double-click to rename · Drag to move · Select → Link · <strong>Scroll to zoom</strong> · Drag background to pan
       </div>
 
       {editPopup && (
@@ -362,7 +350,7 @@ function FlowEditor({ nodes, edges, onChange }) {
             <div className="ep-title">{editPopup.type === "node" ? "Rename Node" : "Set Edge Label"}</div>
             <input className="ep-input" autoFocus value={editPopup.label}
               onChange={e => setEditPopup({ ...editPopup, label: e.target.value })}
-              onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditPopup(null); }}
+              onKeyDown={e => { if (e.key==="Enter") saveEdit(); if (e.key==="Escape") setEditPopup(null); }}
               placeholder="Enter label…" />
             <div className="ep-row">
               <button className="ep-ok" onClick={saveEdit}>Confirm</button>
@@ -375,93 +363,91 @@ function FlowEditor({ nodes, edges, onChange }) {
   );
 }
 
-// ── CSS ───────────────────────────────────────────────────────────────────────
+// ── CSS — COOL PAPER THEME ────────────────────────────────────
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Instrument+Serif:ital@0;1&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Code+Pro:wght@300;400;500;600&display=swap');
 
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
   :root{
-    --bg:#05070F;
-    --surf:#080C17;
-    --surf2:#0D1220;
-    --surf3:#111828;
-    --border:rgba(0,212,255,0.1);
-    --border2:rgba(0,212,255,0.22);
-    --cyan:#00D4FF;
-    --cyan2:#00A8CC;
-    --green:#00FF87;
-    --purple:#9D4EDD;
-    --red:#FF2D55;
-    --text:#E8F4FF;
-    --muted:#4A6A7A;
-    --muted2:#2A3A4A;
+    --bg:#F7F8FC;
+    --surf:#FFFFFF;
+    --surf2:#F2F4FB;
+    --surf3:#EBEEF7;
+    --border:#DDE2EE;
+    --border2:#C4CEEA;
+    --accent:#4A6FA5;
+    --accent2:#2E4F80;
+    --accent3:#93A8CC;
+    --green:#2E7D52;
+    --purple:#7C5CBF;
+    --red:#C0364A;
+    --orange:#C07030;
+    --text:#1A2235;
+    --text2:#3A4A65;
+    --muted:#7A8FAA;
+    --muted2:#B0BECC;
     --r:8px;
     --r-lg:14px;
-    --nav-h:54px;
+    --nav-h:56px;
   }
 
-  html,body{
-    height:100%;
-    /* Upload page: allow scroll. Result page: overflow hidden on body handled via .app */
-  }
+  html,body{height:100%}
 
   body{
-    background:var(--bg);color:var(--text);
-    font-family:'DM Mono',monospace;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Source Code Pro',monospace;
     -webkit-font-smoothing:antialiased;
     overflow-x:hidden;
   }
   body::before{
     content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
     background:
-      radial-gradient(ellipse 70% 50% at 5% 0%,rgba(0,212,255,0.05),transparent),
-      radial-gradient(ellipse 50% 40% at 95% 100%,rgba(157,78,221,0.04),transparent);
+      radial-gradient(ellipse 60% 40% at 0% 0%,rgba(74,111,165,0.04),transparent),
+      radial-gradient(ellipse 50% 60% at 100% 100%,rgba(74,111,165,0.03),transparent);
   }
 
   #root{height:100%}
   .app{min-height:100%;position:relative;z-index:1;display:flex;flex-direction:column}
-
-  /* When result is showing, lock full height */
   .app.result-mode{height:100vh;overflow:hidden}
 
   /* ── TOPNAV ── */
   .topnav{
     height:var(--nav-h);flex-shrink:0;
-    background:rgba(5,7,15,0.95);
+    background:rgba(255,255,255,0.94);
     backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
     border-bottom:1px solid var(--border);
     display:flex;align-items:center;justify-content:space-between;
-    padding:0 28px;z-index:100;position:sticky;top:0;
+    padding:0 32px;z-index:100;position:sticky;top:0;
+    box-shadow:0 1px 12px rgba(74,111,165,0.07);
   }
   .brand{display:flex;align-items:center;gap:12px}
   .brand-logo{
-    width:34px;height:34px;border-radius:7px;flex-shrink:0;
+    width:34px;height:34px;border-radius:8px;flex-shrink:0;
     border:1px solid var(--border2);
-    background:linear-gradient(135deg,#0D1A2E,#0A2030);
-    display:flex;align-items:center;justify-content:center;font-size:15px;
-    box-shadow:0 0 16px rgba(0,212,255,0.12);
+    background:linear-gradient(135deg,#EEF3FB,#D8E4F5);
+    display:flex;align-items:center;justify-content:center;font-size:16px;
+    box-shadow:0 2px 8px rgba(74,111,165,0.1);
   }
-  .brand-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text);letter-spacing:-0.5px}
-  .brand-name span{color:var(--cyan)}
-  .brand-sub{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-top:1px}
+  .brand-name{font-family:'Lora',serif;font-size:19px;font-weight:700;color:var(--text);letter-spacing:-0.3px}
+  .brand-name span{color:var(--accent)}
+  .brand-sub{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-top:1px;font-family:'Source Code Pro',monospace}
   .nav-right{display:flex;align-items:center;gap:10px}
-  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2s ease infinite;flex-shrink:0}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.25}}
+  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(46,125,82,0.5);animation:blink 2s ease infinite;flex-shrink:0}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
   .nav-meta{font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted)}
   .btn-ghost{
-    font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;
+    font-family:'Source Code Pro',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
     font-weight:500;border:1px solid var(--border);color:var(--muted);
     background:transparent;cursor:pointer;border-radius:var(--r);
     padding:7px 14px;transition:all .2s;white-space:nowrap;
   }
-  .btn-ghost:hover{border-color:var(--cyan);color:var(--cyan)}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent);background:rgba(74,111,165,0.04)}
 
   /* ── UPLOAD PAGE ── */
   .upload-page{
-    flex:1;
-    display:grid;
-    grid-template-columns:44% 56%;
+    flex:1;display:grid;grid-template-columns:44% 56%;
     min-height:calc(100vh - var(--nav-h));
   }
   .upload-left{
@@ -469,36 +455,37 @@ const css = `
     padding:72px 52px 72px 56px;
     border-right:1px solid var(--border);
     position:relative;overflow:hidden;
+    background:linear-gradient(160deg,#FFFFFF 0%,#EEF3FB 100%);
   }
   .upload-left::before{
-    content:'';position:absolute;top:-80px;left:-80px;
-    width:360px;height:360px;border-radius:50%;
-    background:radial-gradient(circle,rgba(0,212,255,0.04),transparent 70%);
+    content:'';position:absolute;top:-60px;right:-60px;
+    width:300px;height:300px;border-radius:50%;
+    background:radial-gradient(circle,rgba(74,111,165,0.07),transparent 70%);
     pointer-events:none;
   }
   .upload-right{
     display:flex;flex-direction:column;
     padding:52px 56px 52px 48px;
-    gap:14px;overflow-y:auto;
+    gap:14px;overflow-y:auto;background:var(--bg);
   }
 
   .eyebrow{
-    font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--cyan);
-    display:flex;align-items:center;gap:10px;margin-bottom:18px;font-weight:500;
+    font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);
+    display:flex;align-items:center;gap:10px;margin-bottom:20px;font-weight:600;
   }
-  .eyebrow::before{content:'';width:18px;height:1px;background:var(--cyan);opacity:0.6}
+  .eyebrow::before{content:'';width:18px;height:1px;background:var(--accent);opacity:0.5}
 
   h1{
-    font-family:'Syne',sans-serif;
-    font-size:clamp(34px,4vw,56px);
-    font-weight:800;line-height:1.0;color:var(--text);letter-spacing:-1.5px;
+    font-family:'Lora',serif;
+    font-size:clamp(32px,3.8vw,52px);
+    font-weight:700;line-height:1.05;color:var(--text);letter-spacing:-0.5px;
     margin-bottom:18px;
   }
-  h1 em{font-style:italic;font-family:'Instrument Serif',serif;color:var(--cyan);font-weight:400}
+  h1 em{font-style:italic;color:var(--accent);font-weight:400}
 
   .hero-desc{
-    font-size:12px;line-height:2.1;color:var(--muted);
-    margin-bottom:36px;max-width:380px;font-weight:300;
+    font-size:12px;line-height:2;color:var(--muted);
+    margin-bottom:36px;max-width:380px;font-weight:400;
   }
 
   .feature-list{display:flex;flex-direction:column;border-top:1px solid var(--border)}
@@ -507,7 +494,7 @@ const css = `
     border-bottom:1px solid var(--border);
     font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);
   }
-  .feat-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);flex-shrink:0;box-shadow:0 0 6px var(--cyan)}
+  .feat-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 5px rgba(74,111,165,0.4)}
 
   /* ── DROP ZONE ── */
   .drop{
@@ -516,278 +503,196 @@ const css = `
     cursor:pointer;transition:all .3s;
     min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;
     position:relative;overflow:hidden;
+    box-shadow:0 2px 12px rgba(74,111,165,0.05);
   }
-  .drop::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,212,255,0.03),transparent);pointer-events:none}
-  .drop:hover,.drop.over{border-color:var(--cyan);box-shadow:0 0 32px rgba(0,212,255,0.1)}
+  .drop::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(74,111,165,0.02),transparent);pointer-events:none}
+  .drop:hover,.drop.over{border-color:var(--accent);box-shadow:0 4px 24px rgba(74,111,165,0.12)}
   .drop-icon{font-size:32px;margin-bottom:10px}
-  .drop-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);margin-bottom:5px}
-  .drop-sub{font-size:11px;color:var(--muted);letter-spacing:1px}
+  .drop-title{font-family:'Lora',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:5px}
+  .drop-sub{font-size:11px;color:var(--muted);letter-spacing:0.5px}
   .drop-hint{margin-top:10px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2)}
   .drop-compact{min-height:76px!important;padding:12px 18px!important;flex-direction:row!important;gap:10px;justify-content:center}
 
   /* ── THUMBNAILS ── */
   .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}
-  .img-thumb{
-    position:relative;border-radius:7px;overflow:hidden;
-    border:1px solid var(--border);aspect-ratio:1;background:var(--surf2);
-    transition:all .2s;
-  }
-  .img-thumb:hover{border-color:var(--cyan);transform:scale(1.04);box-shadow:0 0 14px rgba(0,212,255,0.15)}
+  .img-thumb{position:relative;border-radius:7px;overflow:hidden;border:1px solid var(--border);aspect-ratio:1;background:var(--surf2);transition:all .2s}
+  .img-thumb:hover{border-color:var(--accent);transform:scale(1.04);box-shadow:0 4px 16px rgba(74,111,165,0.15)}
   .img-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-  .img-thumb-num{position:absolute;bottom:4px;left:6px;font-size:8px;font-weight:700;color:var(--text);text-shadow:0 1px 4px rgba(0,0,0,0.9);letter-spacing:1px}
-  .img-thumb-del{
-    position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;
-    border:none;cursor:pointer;background:rgba(255,45,85,0.85);color:#fff;font-size:9px;
-    display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;
-  }
+  .img-thumb-num{position:absolute;bottom:4px;left:6px;font-size:8px;font-weight:600;color:var(--text);background:rgba(255,255,255,0.88);padding:1px 4px;border-radius:3px}
+  .img-thumb-del{position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;border:none;cursor:pointer;background:rgba(192,54,74,0.85);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
   .img-thumb:hover .img-thumb-del{opacity:1}
 
-  /* ── UPLOAD OPTION BUTTONS ── */
+  /* ── UPLOAD OPTS ── */
   .upload-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .upload-opt{
-    display:flex;align-items:center;gap:11px;padding:13px 15px;
-    border:1px solid var(--border);border-radius:var(--r);
-    background:var(--surf);cursor:pointer;transition:all .2s;
-  }
-  .upload-opt:hover{border-color:var(--cyan);background:var(--surf2)}
+  .upload-opt{display:flex;align-items:center;gap:11px;padding:13px 15px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);cursor:pointer;transition:all .2s;box-shadow:0 1px 4px rgba(74,111,165,0.04)}
+  .upload-opt:hover{border-color:var(--accent);background:rgba(74,111,165,0.03);box-shadow:0 4px 16px rgba(74,111,165,0.08)}
   .upload-opt-icon{font-size:18px;flex-shrink:0}
-  .upload-opt-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text);font-weight:500}
+  .upload-opt-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);font-weight:600}
   .upload-opt-sub{font-size:10px;color:var(--muted);margin-top:2px}
 
   /* ── PRIMARY BUTTON ── */
   .btn-primary{
-    font-family:'DM Mono',monospace;
-    background:linear-gradient(135deg,var(--cyan),var(--cyan2));
-    color:#000;width:100%;justify-content:center;padding:15px;
-    font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;
-    box-shadow:0 4px 24px rgba(0,212,255,0.28);
+    font-family:'Source Code Pro',monospace;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff;width:100%;justify-content:center;padding:15px;
+    font-size:11px;letter-spacing:2.5px;text-transform:uppercase;font-weight:600;
+    box-shadow:0 4px 20px rgba(74,111,165,0.3);
     border:none;cursor:pointer;border-radius:var(--r);
-    display:flex;align-items:center;gap:8px;
-    transition:all .2s;
+    display:flex;align-items:center;gap:8px;transition:all .2s;
   }
-  .btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,212,255,0.38)}
+  .btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(74,111,165,0.4)}
   .btn-primary:active:not(:disabled){transform:translateY(0)}
-  .btn-primary:disabled{opacity:.35;cursor:not-allowed}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed}
 
   /* ── LOADING ── */
   .loading-wrap{text-align:center;padding:36px 16px}
-  .loading-ring{
-    width:42px;height:42px;margin:0 auto 16px;border-radius:50%;
-    border:2px solid var(--border);border-top-color:var(--cyan);
-    animation:spin .8s linear infinite;
-  }
+  .loading-ring{width:42px;height:42px;margin:0 auto 16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .loading-msg{font-size:10px;letter-spacing:2.5px;color:var(--muted);margin-bottom:12px;text-transform:uppercase}
-  .progress-track{width:150px;margin:0 auto;height:1px;background:var(--border);border-radius:2px;overflow:hidden}
-  .progress-fill{height:100%;background:var(--cyan);border-radius:2px;transition:width .6s ease;box-shadow:0 0 8px var(--cyan)}
+  .loading-msg{font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:12px;text-transform:uppercase}
+  .progress-track{width:150px;margin:0 auto;height:2px;background:var(--border);border-radius:2px;overflow:hidden}
+  .progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .6s ease}
 
   /* ── ERROR ── */
-  .err-box{background:rgba(255,45,85,0.06);border:1px solid rgba(255,45,85,0.2);border-radius:var(--r);padding:10px 14px;color:var(--red);font-size:10px;line-height:1.7}
+  .err-box{background:rgba(192,54,74,0.05);border:1px solid rgba(192,54,74,0.2);border-radius:var(--r);padding:10px 14px;color:var(--red);font-size:10px;line-height:1.7}
   .err-box::before{content:'⚠  '}
 
-  /* ═══════════════════════════════════════════════════════
-     RESULT PAGE — TRUE SIDE-BY-SIDE, FULL HEIGHT
-  ═══════════════════════════════════════════════════════ */
-
-  .result-page{
-    /* Takes remaining height after nav */
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    height:calc(100vh - var(--nav-h));
-    overflow:hidden;
-  }
+  /* ── RESULT PAGE ── */
+  .result-page{flex:1;display:flex;flex-direction:column;height:calc(100vh - var(--nav-h));overflow:hidden}
 
   .res-topbar{
-    flex-shrink:0;
-    background:rgba(5,7,15,0.96);backdrop-filter:blur(16px);
-    border-bottom:1px solid var(--border);
-    padding:9px 28px;
+    flex-shrink:0;background:rgba(255,255,255,0.96);backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--border);padding:9px 32px;
     display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+    box-shadow:0 1px 8px rgba(74,111,165,0.05);
   }
   .res-eyebrow{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
-  .res-title{
-    font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--text);
-    letter-spacing:-0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55vw;
-  }
+  .res-title{font-family:'Lora',serif;font-size:17px;font-weight:600;color:var(--text);letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55vw}
 
-  /* The actual split — both panels fill remaining height exactly */
-  .result-split{
-    flex:1;
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    overflow:hidden;
-    min-height:0;
-  }
+  .result-split{flex:1;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;min-height:0}
 
-  .result-panel{
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-    min-height:0;
-    border-right:1px solid var(--border);
-  }
+  .result-panel{display:flex;flex-direction:column;overflow:hidden;min-height:0;border-right:1px solid var(--border)}
   .result-panel:last-child{border-right:none}
 
-  .panel-hdr{
-    flex-shrink:0;
-    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;
-    padding:9px 20px;
-    background:var(--surf);
-    border-bottom:1px solid var(--border);
-  }
-  .panel-label{
-    font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);
-    display:flex;align-items:center;gap:8px;font-weight:500;
-  }
-  .panel-label::before{content:'';width:10px;height:1px;background:var(--cyan)}
+  .panel-hdr{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:9px 22px;background:var(--surf);border-bottom:1px solid var(--border)}
+  .panel-label{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:8px;font-weight:600}
+  .panel-label::before{content:'';width:10px;height:1px;background:var(--accent)}
   .panel-actions{display:flex;align-items:center;gap:5px}
 
-  /* Notes panel scrolls */
-  .notes-scroll{
-    flex:1;
-    overflow-y:auto;
-    min-height:0;
-  }
+  .notes-scroll{flex:1;overflow-y:auto;min-height:0}
   .notes-scroll::-webkit-scrollbar{width:4px}
   .notes-scroll::-webkit-scrollbar-track{background:transparent}
   .notes-scroll::-webkit-scrollbar-thumb{background:var(--muted2);border-radius:2px}
+  .notes-scroll::-webkit-scrollbar-thumb:hover{background:var(--accent3)}
 
-  .notes-ta{
-    display:block;width:100%;min-height:100%;
-    background:transparent;border:none;outline:none;
-    padding:22px 26px;color:var(--muted);
-    font-family:'DM Mono',monospace;font-size:12px;line-height:2;resize:none;
-  }
+  .notes-ta{display:block;width:100%;min-height:100%;background:transparent;border:none;outline:none;padding:24px 28px;color:var(--text2);font-family:'Source Code Pro',monospace;font-size:12px;line-height:2;resize:none}
   .notes-ta::placeholder{color:var(--muted2)}
-  .notes-prev{padding:22px 26px}
+  .notes-prev{padding:24px 28px}
 
   .diagram-body-outer{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 
-  /* Diagram panel: both-axis scroll like a notes canvas */
-  .diagram-body{
-    flex:1;
-    overflow:auto;
-    min-height:0;
-    position:relative;
-  }
-  /* Custom scrollbars — thin, cyan-tinted, matches notes panel */
+  .diagram-body{flex:1;overflow:auto;min-height:0;position:relative;background:var(--surf2)}
   .diagram-body::-webkit-scrollbar{width:6px;height:6px}
   .diagram-body::-webkit-scrollbar-track{background:var(--surf2)}
-  .diagram-body::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.25);border-radius:3px}
-  .diagram-body::-webkit-scrollbar-thumb:hover{background:rgba(0,212,255,0.45)}
+  .diagram-body::-webkit-scrollbar-thumb{background:var(--muted2);border-radius:3px}
+  .diagram-body::-webkit-scrollbar-thumb:hover{background:var(--accent3)}
   .diagram-body::-webkit-scrollbar-corner{background:var(--surf2)}
-  /* Firefox */
-  .diagram-body{scrollbar-width:thin;scrollbar-color:rgba(0,212,255,0.25) var(--surf2)}
+  .diagram-body{scrollbar-width:thin;scrollbar-color:var(--muted2) var(--surf2)}
 
   /* Notes rendered */
-  .nc h1{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
-  .nc h2{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--text);margin:18px 0 6px}
-  .nc h3{font-size:8px;font-weight:500;color:var(--cyan);margin:14px 0 5px;text-transform:uppercase;letter-spacing:3px}
-  .nc p{font-size:12px;line-height:2;color:#7A9AAA;margin-bottom:9px}
+  .nc h1{font-family:'Lora',serif;font-size:18px;font-weight:700;color:var(--text);margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+  .nc h2{font-family:'Lora',serif;font-size:14px;font-weight:600;color:var(--text);margin:18px 0 6px}
+  .nc h3{font-size:8px;font-weight:600;color:var(--accent);margin:14px 0 5px;text-transform:uppercase;letter-spacing:3px}
+  .nc p{font-size:12px;line-height:2;color:var(--text2);margin-bottom:9px}
   .nc ul{list-style:none;padding:0;margin:6px 0 10px}
   .nc ol{padding-left:20px;margin:6px 0 10px}
-  .nc li{font-size:12px;line-height:1.9;color:#7A9AAA;padding:2px 0 2px 18px;position:relative}
-  .nc ul li::before{content:'›';position:absolute;left:3px;color:var(--cyan);font-size:14px}
+  .nc li{font-size:12px;line-height:1.9;color:var(--text2);padding:2px 0 2px 18px;position:relative}
+  .nc ul li::before{content:'›';position:absolute;left:3px;color:var(--accent);font-size:14px}
   .nc ol li{padding-left:0;list-style:decimal}
   .nc ol li::before{display:none}
   .nc strong{color:var(--text);font-weight:700}
-  .nc em{color:var(--cyan);font-style:italic}
-  .nc code{background:rgba(0,212,255,0.08);color:var(--cyan);padding:2px 6px;border-radius:4px;font-size:10px}
+  .nc em{color:var(--accent);font-style:italic}
+  .nc code{background:rgba(74,111,165,0.07);color:var(--accent2);padding:2px 6px;border-radius:4px;font-size:10px;border:1px solid rgba(74,111,165,0.12)}
   .nc hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 
   /* ── TOGGLES ── */
   .toggle-group{display:flex;gap:2px;background:var(--surf2);border-radius:6px;padding:2px;border:1px solid var(--border)}
-  .toggle-btn{font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;border:none;border-radius:4px;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s;font-family:'DM Mono',monospace}
-  .toggle-btn.active{background:var(--cyan);color:#000;font-weight:700}
+  .toggle-btn{font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;border:none;border-radius:4px;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s;font-family:'Source Code Pro',monospace}
+  .toggle-btn.active{background:var(--accent);color:#fff;font-weight:600}
 
   /* ── DOWNLOAD BUTTONS ── */
-  .dl-btn{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;font-weight:500;border:none;cursor:pointer;border-radius:5px;display:inline-flex;align-items:center;gap:4px;padding:5px 10px;transition:all .2s;white-space:nowrap;font-family:'DM Mono',monospace}
+  .dl-btn{font-size:8px;letter-spacing:1px;text-transform:uppercase;font-weight:500;border:none;cursor:pointer;border-radius:5px;display:inline-flex;align-items:center;gap:4px;padding:5px 10px;transition:all .2s;white-space:nowrap;font-family:'Source Code Pro',monospace}
   .dl-btn:disabled{opacity:.35;cursor:not-allowed}
-  .dl-jpg{background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);color:var(--cyan)}
-  .dl-jpg:hover:not(:disabled){background:rgba(0,212,255,0.15)}
-  .dl-doc{background:rgba(157,78,221,0.08);border:1px solid rgba(157,78,221,0.2);color:var(--purple)}
-  .dl-doc:hover:not(:disabled){background:rgba(157,78,221,0.15)}
-  .dl-svg{background:rgba(0,255,135,0.08);border:1px solid rgba(0,255,135,0.2);color:var(--green)}
-  .dl-svg:hover:not(:disabled){background:rgba(0,255,135,0.15)}
+  .dl-jpg{background:rgba(74,111,165,0.08);border:1px solid rgba(74,111,165,0.22);color:var(--accent)}
+  .dl-jpg:hover:not(:disabled){background:rgba(74,111,165,0.14)}
+  .dl-doc{background:rgba(124,92,191,0.08);border:1px solid rgba(124,92,191,0.22);color:var(--purple)}
+  .dl-doc:hover:not(:disabled){background:rgba(124,92,191,0.14)}
+  .dl-svg{background:rgba(46,125,82,0.08);border:1px solid rgba(46,125,82,0.22);color:var(--green)}
+  .dl-svg:hover:not(:disabled){background:rgba(46,125,82,0.14)}
 
   /* ── FLOW EDITOR ── */
-  .fe-toolbar{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:7px 12px;background:var(--surf2);border-bottom:1px solid var(--border);flex-wrap:wrap;min-height:44px}
-  .fe-btn{font-size:8px;letter-spacing:.5px;text-transform:uppercase;padding:5px 9px;border:1px solid var(--border);background:var(--surf);color:var(--muted);border-radius:4px;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:'DM Mono',monospace;font-weight:500}
-  .fe-btn:hover{background:var(--surf3);border-color:var(--cyan);color:var(--cyan)}
-  .fe-btn-connect{border-color:rgba(0,212,255,0.2);color:var(--cyan)}
-  .fe-btn-edit{border-color:rgba(0,255,135,0.2);color:var(--green)}
-  .fe-btn-del{border-color:rgba(255,45,85,0.2);color:var(--red)}
+  .fe-toolbar{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:7px 12px;background:var(--surf);border-bottom:1px solid var(--border);flex-wrap:wrap;min-height:44px;box-shadow:0 1px 4px rgba(74,111,165,0.04)}
+  .fe-btn{font-size:8px;letter-spacing:.5px;text-transform:uppercase;padding:5px 9px;border:1px solid var(--border);background:var(--surf2);color:var(--text2);border-radius:4px;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:'Source Code Pro',monospace;font-weight:500}
+  .fe-btn:hover{background:rgba(74,111,165,0.07);border-color:var(--accent);color:var(--accent)}
+  .fe-btn-connect{border-color:rgba(74,111,165,0.3);color:var(--accent)}
+  .fe-btn-edit{border-color:rgba(46,125,82,0.3);color:var(--green)}
+  .fe-btn-del{border-color:rgba(192,54,74,0.3);color:var(--red)}
   .fe-zoom-btn{padding:4px 8px}
-  .fe-sel{font-size:8px;padding:4px 7px;border:1px solid var(--border);background:var(--surf);color:var(--text);border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace}
+  .fe-sel{font-size:8px;padding:4px 7px;border:1px solid var(--border);background:var(--surf2);color:var(--text);border-radius:4px;cursor:pointer;font-family:'Source Code Pro',monospace}
   .fe-zoom{font-size:9px;color:var(--muted);min-width:28px;text-align:center}
-  .fe-hint{font-size:9px;color:var(--cyan);animation:gpulse 1.4s ease infinite;letter-spacing:1px}
+  .fe-hint{font-size:9px;color:var(--accent);animation:gpulse 1.4s ease infinite;letter-spacing:1px}
   @keyframes gpulse{0%,100%{opacity:0.3}50%{opacity:1}}
-  .fe-hint-bar{
-    flex-shrink:0;font-size:10px;color:var(--muted2);
-    text-align:center;padding:5px 8px;
-    border-top:1px solid var(--border);letter-spacing:0.5px;
-  }
-  .fe-hint-bar strong{color:var(--muted);font-weight:400}
+  .fe-hint-bar{flex-shrink:0;font-size:10px;color:var(--muted);text-align:center;padding:5px 8px;border-top:1px solid var(--border);background:var(--surf);letter-spacing:0.3px}
+  .fe-hint-bar strong{color:var(--text2);font-weight:500}
 
   /* ── EDIT POPUP ── */
-  .ep-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:fadeIn .15s ease}
+  .ep-overlay{position:fixed;inset:0;background:rgba(26,34,53,0.4);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);animation:fadeIn .15s ease}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-  .ep{background:var(--surf);border:1px solid var(--border2);border-radius:var(--r-lg);padding:26px;width:310px;box-shadow:0 16px 64px rgba(0,0,0,0.8);animation:slideUp .2s ease}
-  @keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
-  .ep-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px}
-  .ep-input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none;margin-bottom:12px;transition:border-color .15s}
-  .ep-input:focus{border-color:var(--cyan)}
+  .ep{background:var(--surf);border:1px solid var(--border2);border-radius:var(--r-lg);padding:26px;width:310px;box-shadow:0 16px 48px rgba(26,34,53,0.14);animation:slideUp .2s ease}
+  @keyframes slideUp{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+  .ep-title{font-family:'Lora',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:14px}
+  .ep-input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--text);font-family:'Source Code Pro',monospace;font-size:12px;outline:none;margin-bottom:12px;transition:border-color .15s}
+  .ep-input:focus{border-color:var(--accent)}
   .ep-row{display:flex;gap:8px}
-  .ep-ok{flex:1;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:9px;border:none;border-radius:var(--r);cursor:pointer;background:var(--cyan);color:#000;font-weight:700}
-  .ep-ok:hover{background:var(--cyan2)}
-  .ep-cancel{flex:1;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:9px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:transparent;color:var(--muted)}
+  .ep-ok{flex:1;font-family:'Source Code Pro',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:9px;border:none;border-radius:var(--r);cursor:pointer;background:var(--accent);color:#fff;font-weight:600;transition:background .15s}
+  .ep-ok:hover{background:var(--accent2)}
+  .ep-cancel{flex:1;font-family:'Source Code Pro',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:9px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:transparent;color:var(--muted);transition:all .15s}
   .ep-cancel:hover{border-color:var(--red);color:var(--red)}
 
-  /* ── DL ERROR + FOOTER ── */
-  .dl-err{flex-shrink:0;background:rgba(255,45,85,0.06);border:1px solid rgba(255,45,85,0.15);border-radius:var(--r);padding:7px 14px;color:var(--red);font-size:10px;margin:6px 24px}
-  .footer{flex-shrink:0;padding:11px 28px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
-  .footer-brand{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--muted)}
-  .footer-brand span{color:var(--cyan)}
+  /* ── FOOTER ── */
+  .dl-err{flex-shrink:0;background:rgba(192,54,74,0.05);border:1px solid rgba(192,54,74,0.18);border-radius:var(--r);padding:7px 14px;color:var(--red);font-size:10px;margin:6px 24px}
+  .footer{flex-shrink:0;padding:11px 32px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;background:var(--surf)}
+  .footer-brand{font-family:'Lora',serif;font-size:13px;font-weight:600;color:var(--text2)}
+  .footer-brand span{color:var(--accent)}
   .footer-meta{font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted2)}
 
-  /* ── REVEAL ── */
   .reveal{opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .55s ease}
   .reveal.in{opacity:1;transform:none}
 
-  /* ══════════════════════════════════════════════════════
-     RESPONSIVE
-  ══════════════════════════════════════════════════════ */
-
-  /* Tablet — stack panels vertically */
+  /* ── RESPONSIVE ── */
   @media(max-width:900px){
     .upload-page{grid-template-columns:1fr;min-height:auto}
     .upload-left{padding:40px 28px;border-right:none;border-bottom:1px solid var(--border)}
     .upload-right{padding:32px 28px 56px}
     .feature-list{display:none}
-
-    /* Result: unlock height, stack vertically */
     .result-page{height:auto;overflow:visible}
     .result-split{grid-template-columns:1fr;height:auto;overflow:visible}
     .result-panel{height:auto;overflow:visible;border-right:none;border-bottom:1px solid var(--border)}
     .result-panel:last-child{border-bottom:none}
-    /* Give diagram a fixed height on tablet so it's usable */
     .diagram-body{height:480px}
     .notes-scroll{max-height:420px;overflow-y:auto}
   }
-
   @media(max-width:600px){
-    :root{--nav-h:48px}
+    :root{--nav-h:50px}
     .brand-sub{display:none}
-    .brand-name{font-size:16px}
+    .brand-name{font-size:17px}
     .topnav{padding:0 16px}
     h1{font-size:clamp(26px,8vw,36px)}
     .upload-left{padding:28px 16px}
     .upload-right{padding:24px 16px 48px}
     .upload-opts{grid-template-columns:1fr}
     .drop{min-height:150px;padding:26px 14px}
-    .res-topbar{padding:8px 14px}
-    .panel-hdr{padding:7px 12px;flex-wrap:wrap}
+    .res-topbar{padding:8px 16px}
+    .panel-hdr{padding:7px 14px;flex-wrap:wrap}
     .panel-actions{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
     .dl-btn,.toggle-btn{flex-shrink:0}
     .fe-toolbar{overflow-x:auto;flex-wrap:nowrap;padding:5px 10px}
@@ -797,21 +702,17 @@ const css = `
     .footer{padding:10px 16px}
     .dl-err{margin:5px 14px}
   }
-
   @media(min-width:1400px){
-    .topnav,.res-topbar,.footer{padding-left:48px;padding-right:48px}
+    .topnav,.res-topbar,.footer{padding-left:52px;padding-right:52px}
     .upload-left{padding:80px 60px 80px 64px}
     .upload-right{padding:60px 64px 60px 56px}
     .panel-hdr{padding:10px 28px}
-    .notes-ta,.notes-prev{padding:28px 34px}
+    .notes-ta,.notes-prev{padding:28px 36px}
   }
-
-  @media(hover:none){
-    .btn-primary:hover:not(:disabled){transform:none}
-  }
+  @media(hover:none){.btn-primary:hover:not(:disabled){transform:none}}
 `;
 
-// ── MAIN APP ──────────────────────────────────────────────────────────────────
+// ── MAIN APP ──────────────────────────────────────────────────
 export default function App() {
   const [images, setImages] = useState([]);
   const [step, setStep] = useState("upload");
@@ -829,9 +730,8 @@ export default function App() {
   const [dlBusy, setDlBusy] = useState("");
   const [revealed, setRevealed] = useState(false);
 
-  // ── Separate refs for gallery vs camera input ─────────────────
-  const galleryRef = useRef();   // multiple files from gallery
-  const cameraRef  = useRef();   // single photo from camera
+  const galleryRef = useRef();
+  const cameraRef  = useRef();
   const notesCardRef = useRef();
   const flowCardRef  = useRef();
 
@@ -845,16 +745,10 @@ export default function App() {
   const readImageFile = file => new Promise(resolve => {
     if (!file || !file.type.startsWith("image/")) return resolve(null);
     const r = new FileReader();
-    r.onload = e => resolve({
-      src:  e.target.result,
-      b64:  e.target.result.split(",")[1],
-      mime: file.type || "image/jpeg",
-      name: file.name || "image",
-    });
+    r.onload = e => resolve({ src: e.target.result, b64: e.target.result.split(",")[1], mime: file.type || "image/jpeg", name: file.name || "image" });
     r.readAsDataURL(file);
   });
 
-  // ── Core handler: accepts a FileList, deduplicates, appends ───
   const handleFiles = useCallback(async fileList => {
     const arr = Array.from(fileList).filter(f => f.type.startsWith("image/"));
     if (!arr.length) return;
@@ -866,35 +760,15 @@ export default function App() {
     });
   }, []);
 
-  // ── onChange for gallery input (multiple) ─────────────────────
-  const onGalleryChange = e => {
-    if (e.target.files?.length) handleFiles(e.target.files);
-    e.target.value = "";   // reset so same file can be picked again
-  };
-
-  // ── onChange for camera input ─────────────────────────────────
-  const onCameraChange = e => {
-    if (e.target.files?.length) handleFiles(e.target.files);
-    e.target.value = "";
-  };
-
-  const handleDrop = useCallback(e => {
-    e.preventDefault(); setDragOver(false);
-    handleFiles(e.dataTransfer.files);
-  }, [handleFiles]);
-
+  const onGalleryChange = e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ""; };
+  const onCameraChange  = e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ""; };
+  const handleDrop = useCallback(e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }, [handleFiles]);
   const removeImage = idx => setImages(prev => prev.filter((_, i) => i !== idx));
 
   const analyze = async () => {
     if (!images.length) return;
     setLoading(true); setError(""); setDlError(""); setLoadPct(0);
-    const stages = [
-      [0,  "Transmitting images…"],
-      [20, "Decoding handwriting…"],
-      [48, "Structuring content…"],
-      [72, "Building flow diagram…"],
-      [90, "Finalising…"],
-    ];
+    const stages = [[0,"Transmitting images…"],[20,"Decoding handwriting…"],[48,"Structuring content…"],[72,"Building flow diagram…"],[90,"Finalising…"]];
     let mi = 0;
     const tick = setInterval(() => {
       if (mi < stages.length) { setLoadMsg(stages[mi][1]); setLoadPct(stages[mi][0]); mi++; }
@@ -903,30 +777,22 @@ export default function App() {
       const payload = images.length === 1
         ? { imageBase64: images[0].b64, imageMime: images[0].mime }
         : { images: images.map(i => ({ imageBase64: i.b64, imageMime: i.mime })) };
-
-      const res = await fetch(`${BACKEND_URL}/api/analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(`${BACKEND_URL}/api/analyze`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
       clearInterval(tick); setLoadPct(96); setLoadMsg("Processing response…");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
-
       setTitle(data.title || "Notes");
       setNotes(data.notes || "");
-      const code = (data.mermaidCode || "flowchart TD\n  A([Start]) --> B[Content]").replace(/```[\w]*\n?/g, "").trim();
+      const code = (data.mermaidCode || "flowchart TD\n  A([Start]) --> B[Content]").replace(/```[\w]*\n?/g,"").trim();
       const { nodes: n, edges: e } = parseMermaidToGraph(code);
       setFlowNodes(n); setFlowEdges(e);
       setLoadPct(100);
       setTimeout(() => setStep("result"), 300);
     } catch (err) {
       clearInterval(tick);
-      setError(
-        err.message.includes("fetch") || err.message.includes("Failed")
-          ? "Cannot reach the server. Check that the backend is running on Render."
-          : err.message
-      );
+      setError(err.message.includes("fetch") || err.message.includes("Failed")
+        ? "Cannot reach the server. Check that the backend is running on Render."
+        : err.message);
     } finally { setLoading(false); }
   };
 
@@ -947,10 +813,9 @@ export default function App() {
     setDlBusy("notes-jpg"); setDlError("");
     try {
       await loadH2C();
-      const el = notesCardRef.current;
-      const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: "#080C17", useCORS: true, logging: false });
-      triggerDownload(canvas.toDataURL("image/jpeg", 0.95), `${title || "notes"}.jpg`);
-    } catch (e) { setDlError("JPG export failed: " + e.message); }
+      const canvas = await window.html2canvas(notesCardRef.current, { scale:2, backgroundColor:"#FFFFFF", useCORS:true, logging:false });
+      triggerDownload(canvas.toDataURL("image/jpeg",0.95), `${title||"notes"}.jpg`);
+    } catch(e) { setDlError("JPG export failed: "+e.message); }
     finally { setDlBusy(""); }
   };
 
@@ -959,9 +824,9 @@ export default function App() {
     try {
       const blob = await makeDocxBlob(title, notes);
       const url = URL.createObjectURL(blob);
-      triggerDownload(url, `${title || "notes"}.docx`);
+      triggerDownload(url, `${title||"notes"}.docx`);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
-    } catch (e) { setDlError("DOCX export failed: " + e.message); }
+    } catch(e) { setDlError("DOCX export failed: "+e.message); }
     finally { setDlBusy(""); }
   };
 
@@ -971,9 +836,9 @@ export default function App() {
       await loadH2C();
       const svgEl = flowCardRef.current?.querySelector("svg");
       if (!svgEl) throw new Error("Diagram not found");
-      const canvas = await window.html2canvas(svgEl, { scale: 2, backgroundColor: "#05070F", useCORS: true, logging: false });
-      triggerDownload(canvas.toDataURL("image/jpeg", 0.95), `${title || "diagram"}.jpg`);
-    } catch (e) { setDlError("JPG export failed: " + e.message); }
+      const canvas = await window.html2canvas(svgEl, { scale:2, backgroundColor:"#F2F4FB", useCORS:true, logging:false });
+      triggerDownload(canvas.toDataURL("image/jpeg",0.95), `${title||"diagram"}.jpg`);
+    } catch(e) { setDlError("JPG export failed: "+e.message); }
     finally { setDlBusy(""); }
   };
 
@@ -983,13 +848,13 @@ export default function App() {
       const svgEl = flowCardRef.current?.querySelector("svg");
       if (!svgEl) throw new Error("Diagram not found");
       const clone = svgEl.cloneNode(true);
-      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-      clone.setAttribute("style", "background:#05070F");
-      const blob = new Blob([clone.outerHTML], { type: "image/svg+xml" });
+      clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
+      clone.setAttribute("style","background:#F2F4FB");
+      const blob = new Blob([clone.outerHTML], { type:"image/svg+xml" });
       const url = URL.createObjectURL(blob);
-      triggerDownload(url, `${title || "diagram"}.svg`);
+      triggerDownload(url, `${title||"diagram"}.svg`);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
-    } catch (e) { setDlError("SVG export failed: " + e.message); }
+    } catch(e) { setDlError("SVG export failed: "+e.message); }
   };
 
   const reset = () => {
@@ -1004,12 +869,11 @@ export default function App() {
       <style>{css}</style>
       <div className={`app${step === "result" ? " result-mode" : ""}`}>
 
-        {/* ── TOPNAV ── */}
         <nav className="topnav">
           <div className="brand">
-            <div className="brand-logo">✒</div>
+            <div className="brand-logo">📄</div>
             <div>
-              <div className="brand-name">Script<span>AI</span></div>
+              <div className="brand-name">Note<span>Forge</span></div>
               <div className="brand-sub">Handwriting Intelligence</div>
             </div>
           </div>
@@ -1020,30 +884,11 @@ export default function App() {
           </div>
         </nav>
 
-        {/* ── UPLOAD STEP ── */}
         {step === "upload" && (
           <div className={`upload-page reveal ${revealed ? "in" : ""}`}>
+            <input ref={galleryRef} type="file" accept="image/*" multiple style={{ display:"none" }} onChange={onGalleryChange} />
+            <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={onCameraChange} />
 
-            {/* Gallery input — multiple files */}
-            <input
-              ref={galleryRef}
-              type="file"
-              accept="image/*"
-              multiple
-              style={{ display: "none" }}
-              onChange={onGalleryChange}
-            />
-            {/* Camera input — single capture */}
-            <input
-              ref={cameraRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              style={{ display: "none" }}
-              onChange={onCameraChange}
-            />
-
-            {/* LEFT — Hero */}
             <div className="upload-left">
               <div className="eyebrow">AI-Powered Notes Reader</div>
               <h1>Raw notes,<br /><em>instantly structured.</em></h1>
@@ -1060,12 +905,9 @@ export default function App() {
               </div>
             </div>
 
-            {/* RIGHT — Upload zone */}
             <div className="upload-right">
-
-              {/* Drop zone */}
               <div
-                className={`drop ${dragOver ? "over" : ""} ${images.length ? "drop-compact" : ""}`}
+                className={`drop ${dragOver?"over":""} ${images.length?"drop-compact":""}`}
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}
@@ -1080,30 +922,25 @@ export default function App() {
                   </>
                 ) : (
                   <>
-                    <span className="drop-icon" style={{ fontSize: 20, marginBottom: 3 }}>＋</span>
-                    <div className="drop-title" style={{ fontSize: 13 }}>Add more pages</div>
+                    <span className="drop-icon" style={{ fontSize:20, marginBottom:3 }}>＋</span>
+                    <div className="drop-title" style={{ fontSize:13 }}>Add more pages</div>
                     <div className="drop-sub">{images.length} page{images.length > 1 ? "s" : ""} ready</div>
                   </>
                 )}
               </div>
 
-              {/* Thumbnails */}
               {images.length > 0 && (
                 <div className="img-grid">
                   {images.map((img, idx) => (
                     <div key={idx} className="img-thumb">
-                      <img src={img.src} alt={`Page ${idx + 1}`} />
-                      <div className="img-thumb-num">P{idx + 1}</div>
-                      <button
-                        className="img-thumb-del"
-                        onClick={e => { e.stopPropagation(); removeImage(idx); }}
-                      >✕</button>
+                      <img src={img.src} alt={`Page ${idx+1}`} />
+                      <div className="img-thumb-num">P{idx+1}</div>
+                      <button className="img-thumb-del" onClick={e => { e.stopPropagation(); removeImage(idx); }}>✕</button>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Upload / Camera buttons */}
               <div className="upload-opts">
                 <button className="upload-opt" onClick={e => { e.stopPropagation(); galleryRef.current.click(); }}>
                   <span className="upload-opt-icon">🖼</span>
@@ -1125,9 +962,7 @@ export default function App() {
                 <div className="loading-wrap">
                   <div className="loading-ring" />
                   <div className="loading-msg">{loadMsg || "Processing…"}</div>
-                  <div className="progress-track">
-                    <div className="progress-fill" style={{ width: `${loadPct}%` }} />
-                  </div>
+                  <div className="progress-track"><div className="progress-fill" style={{ width:`${loadPct}%` }} /></div>
                 </div>
               ) : (
                 <button className="btn-primary" disabled={!images.length || loading} onClick={analyze}>
@@ -1140,10 +975,8 @@ export default function App() {
           </div>
         )}
 
-        {/* ── RESULT STEP ── */}
         {step === "result" && (
           <div className="result-page">
-
             <div className="res-topbar">
               <div>
                 <div className="res-eyebrow">Structured from {images.length} image{images.length > 1 ? "s" : ""}</div>
@@ -1152,24 +985,17 @@ export default function App() {
               <button className="btn-ghost" onClick={reset}>↩ New Upload</button>
             </div>
 
-            {/* Side-by-side panels — both full height */}
             <div className="result-split">
-
-              {/* LEFT — Notes */}
               <div className="result-panel" ref={notesCardRef}>
                 <div className="panel-hdr">
                   <div className="panel-label">Extracted Notes</div>
                   <div className="panel-actions">
                     <div className="toggle-group">
-                      <button className={`toggle-btn ${notesMode === "preview" ? "active" : ""}`} onClick={() => setNotesMode("preview")}>Preview</button>
-                      <button className={`toggle-btn ${notesMode === "edit" ? "active" : ""}`} onClick={() => setNotesMode("edit")}>Edit</button>
+                      <button className={`toggle-btn ${notesMode==="preview"?"active":""}`} onClick={() => setNotesMode("preview")}>Preview</button>
+                      <button className={`toggle-btn ${notesMode==="edit"?"active":""}`} onClick={() => setNotesMode("edit")}>Edit</button>
                     </div>
-                    <button className="dl-btn dl-jpg" disabled={dlBusy === "notes-jpg"} onClick={dlNotesJpg}>
-                      {dlBusy === "notes-jpg" ? "…" : "🖼 JPG"}
-                    </button>
-                    <button className="dl-btn dl-doc" disabled={dlBusy === "notes-docx"} onClick={dlNotesDocx}>
-                      {dlBusy === "notes-docx" ? "…" : "📄 DOCX"}
-                    </button>
+                    <button className="dl-btn dl-jpg" disabled={dlBusy==="notes-jpg"} onClick={dlNotesJpg}>{dlBusy==="notes-jpg"?"…":"🖼 JPG"}</button>
+                    <button className="dl-btn dl-doc" disabled={dlBusy==="notes-docx"} onClick={dlNotesDocx}>{dlBusy==="notes-docx"?"…":"📄 DOCX"}</button>
                   </div>
                 </div>
                 <div className="notes-scroll">
@@ -1180,27 +1006,19 @@ export default function App() {
                 </div>
               </div>
 
-              {/* RIGHT — Diagram */}
               <div className="result-panel" ref={flowCardRef}>
                 <div className="panel-hdr">
                   <div className="panel-label">Flow Diagram</div>
                   <div className="panel-actions">
-                    <span style={{ fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: "var(--muted2)" }}>Interactive</span>
-                    <button className="dl-btn dl-jpg" disabled={dlBusy === "diag-jpg"} onClick={dlDiagramJpg}>
-                      {dlBusy === "diag-jpg" ? "…" : "🖼 JPG"}
-                    </button>
+                    <span style={{ fontSize:8, letterSpacing:2, textTransform:"uppercase", color:"var(--muted2)" }}>Interactive</span>
+                    <button className="dl-btn dl-jpg" disabled={dlBusy==="diag-jpg"} onClick={dlDiagramJpg}>{dlBusy==="diag-jpg"?"…":"🖼 JPG"}</button>
                     <button className="dl-btn dl-svg" onClick={dlDiagramSvg}>◈ SVG</button>
                   </div>
                 </div>
                 <div className="diagram-body-outer">
-                  <FlowEditor
-                    nodes={flowNodes}
-                    edges={flowEdges}
-                    onChange={(n, e) => { setFlowNodes(n); setFlowEdges(e); }}
-                  />
+                  <FlowEditor nodes={flowNodes} edges={flowEdges} onChange={(n,e) => { setFlowNodes(n); setFlowEdges(e); }} />
                 </div>
               </div>
-
             </div>
 
             {dlError && <div className="dl-err">⚠ {dlError}</div>}
@@ -1208,10 +1026,9 @@ export default function App() {
         )}
 
         <footer className="footer">
-          <div className="footer-brand">Script<span>AI</span> — Handwriting to knowledge</div>
+          <div className="footer-brand">Note<span>Forge</span> — Handwriting to knowledge</div>
           <div className="footer-meta">AI Powered · {year}</div>
         </footer>
-
       </div>
     </>
   );
