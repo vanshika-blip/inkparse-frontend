@@ -96,41 +96,30 @@ async function makeDocxBlob(title, notes) {
   return Packer.toBlob(doc);
 }
 
-// ── SVG → JPG (fixed: no html2canvas, pure canvas approach) ──────────────────
 async function svgToJpgBlob(svgElement) {
-  // Inline all styles and fonts into a standalone SVG string
   const clone = svgElement.cloneNode(true);
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
-
-  // Force explicit dimensions
   const bbox = svgElement.getBoundingClientRect();
   const w = svgElement.getAttribute("width") || Math.ceil(bbox.width) || 1200;
   const h = svgElement.getAttribute("height") || Math.ceil(bbox.height) || 900;
   clone.setAttribute("width", w);
   clone.setAttribute("height", h);
-
-  // Embed Google Fonts as base64 is complex; use a system fallback in export
-  // Remove font imports from <defs> to keep SVG self-contained
   const styleEls = clone.querySelectorAll("style");
   styleEls.forEach(s => s.remove());
-
-  // Add a background rect
   const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
   bg.setAttribute("x", "0"); bg.setAttribute("y", "0");
   bg.setAttribute("width", w); bg.setAttribute("height", h);
   bg.setAttribute("fill", "#F2F4FB");
   clone.insertBefore(bg, clone.firstChild);
-
   const svgStr = new XMLSerializer().serializeToString(clone);
   const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(svgBlob);
-
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const scale = 2; // retina
+      const scale = 2;
       canvas.width  = Number(w) * scale;
       canvas.height = Number(h) * scale;
       const ctx = canvas.getContext("2d");
@@ -146,7 +135,6 @@ async function svgToJpgBlob(svgElement) {
   });
 }
 
-// ── NODE COLORS ───────────────────────────────────────────────
 const NODE_COLORS = [
   { fill: "#EEF3FB", stroke: "#4A6FA5", text: "#1A2235", glow: "rgba(74,111,165,0.25)" },
   { fill: "#F0EAF8", stroke: "#7C5CBF", text: "#1A1230", glow: "rgba(124,92,191,0.25)" },
@@ -445,14 +433,47 @@ const css = `
     --nav-h:56px;
   }
 
-  html,body{height:100%}
-  body{background:var(--bg);color:var(--text);font-family:'Source Code Pro',monospace;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-  #root{height:100%}
-  .app{min-height:100%;position:relative;z-index:1;display:flex;flex-direction:column}
-  .app.result-mode{height:100vh;overflow:hidden}
+  /* ── CRITICAL FULL-WIDTH FIXES ── */
+  html {
+    width: 100%;
+    max-width: none !important;
+    height: 100%;
+  }
+  body {
+    width: 100%;
+    max-width: none !important;
+    min-width: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Code Pro', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  #root {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0;
+    min-height: 100%;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .app.result-mode { height: 100vh; overflow: hidden; }
 
   /* ── TOPNAV ── */
   .topnav{
+    width: 100%;
     height:var(--nav-h);flex-shrink:0;
     background:rgba(255,255,255,0.96);
     backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
@@ -482,10 +503,12 @@ const css = `
 
   /* ── UPLOAD PAGE ── */
   .upload-page{
-    flex:1;display:flex;flex-direction:column;align-items:center;
+    flex:1;
+    width: 100%;
+    display:flex;flex-direction:column;align-items:center;
     justify-content:center;
     min-height:calc(100vh - var(--nav-h));
-    padding:40px 20px 60px;
+    padding:40px 40px 60px;
     background: radial-gradient(ellipse at 60% 0%, rgba(74,111,165,0.06) 0%, transparent 60%),
                 radial-gradient(ellipse at 10% 80%, rgba(124,92,191,0.04) 0%, transparent 50%),
                 var(--bg);
@@ -501,10 +524,10 @@ const css = `
     display:flex;align-items:center;justify-content:center;font-size:28px;
     box-shadow:0 4px 20px rgba(74,111,165,0.12);
   }
-  .upload-hero h1{font-family:'Lora',serif;font-size:clamp(22px,5vw,32px);font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.2}
-  .upload-hero p{font-size:12px;color:var(--muted);letter-spacing:0.5px;line-height:1.7;max-width:360px;margin:0 auto}
+  .upload-hero h1{font-family:'Lora',serif;font-size:clamp(22px,5vw,36px);font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.2}
+  .upload-hero p{font-size:12px;color:var(--muted);letter-spacing:0.5px;line-height:1.7;max-width:460px;margin:0 auto}
 
-  .upload-well{width:100%;max-width:860px;display:flex;flex-direction:column;gap:12px}
+  .upload-well{width:100%;max-width:960px;display:flex;flex-direction:column;gap:12px}
 
   /* ── DROP ZONE ── */
   .drop{
@@ -530,7 +553,6 @@ const css = `
   .drop-sub{font-size:11px;color:var(--muted);letter-spacing:0.3px}
   .drop-hint{margin-top:10px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2)}
 
-  /* compact drop when images loaded */
   .drop-compact{padding:16px 20px!important;flex-direction:row!important;gap:12px;text-align:left!important}
   .drop-compact .drop-icon{font-size:20px;margin-bottom:0;flex-shrink:0}
   .drop-compact .drop-title{font-size:13px;margin-bottom:2px}
@@ -555,7 +577,6 @@ const css = `
   .upload-opt:hover{border-color:var(--accent);background:rgba(74,111,165,0.03);box-shadow:0 4px 20px rgba(74,111,165,0.1);transform:translateY(-1px)}
   .upload-opt:active{transform:translateY(0)}
   .upload-opt-icon{font-size:18px;flex-shrink:0}
-  .upload-opt-text{}
   .upload-opt-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);font-weight:600;display:block}
   .upload-opt-desc{font-size:9px;color:var(--muted);display:block;margin-top:1px}
 
@@ -586,9 +607,16 @@ const css = `
   .err-box::before{content:'⚠  '}
 
   /* ── RESULT PAGE ── */
-  .result-page{flex:1;display:flex;flex-direction:column;height:calc(100vh - var(--nav-h));overflow:hidden}
+  .result-page{
+    flex:1;
+    width: 100%;
+    display:flex;flex-direction:column;
+    height:calc(100vh - var(--nav-h));
+    overflow:hidden;
+  }
 
   .res-topbar{
+    width: 100%;
     flex-shrink:0;background:rgba(255,255,255,0.96);backdrop-filter:blur(16px);
     border-bottom:1px solid var(--border);padding:10px 24px;
     display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
@@ -596,7 +624,14 @@ const css = `
   }
   .res-title{font-family:'Lora',serif;font-size:16px;font-weight:600;color:var(--text);letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60vw}
 
-  .result-split{flex:1;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;min-height:0}
+  .result-split{
+    flex:1;
+    width: 100%;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    overflow:hidden;
+    min-height:0;
+  }
   .result-panel{display:flex;flex-direction:column;overflow:hidden;min-height:0;border-right:1px solid var(--border)}
   .result-panel:last-child{border-right:none}
 
@@ -684,7 +719,11 @@ const css = `
 
   /* ── FOOTER ── */
   .dl-err{flex-shrink:0;background:rgba(192,54,74,0.05);border:1px solid rgba(192,54,74,0.18);border-radius:var(--r);padding:7px 14px;color:var(--red);font-size:10px;margin:6px 20px}
-  .footer{flex-shrink:0;padding:12px 24px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surf)}
+  .footer{
+    width: 100%;
+    flex-shrink:0;padding:12px 24px;border-top:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;background:var(--surf);
+  }
   .footer-brand{font-family:'Lora',serif;font-size:13px;font-weight:600;color:var(--text2)}
   .footer-brand span{color:var(--accent)}
   .footer-hint{font-size:9px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase}
@@ -845,7 +884,6 @@ export default function App() {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
-  // ── NOTES JPG via html2canvas ──
   const loadH2C = () => new Promise((res, rej) => {
     if (window.html2canvas) return res();
     const s = document.createElement("script");
@@ -877,7 +915,6 @@ export default function App() {
     finally { setDlBusy(""); }
   };
 
-  // ── DIAGRAM JPG — fixed: serialize SVG → Image → Canvas (no html2canvas) ──
   const dlDiagramJpg = async () => {
     setDlBusy("diag-jpg"); setDlError("");
     try {
@@ -934,7 +971,6 @@ export default function App() {
             <input ref={galleryRef} type="file" accept="image/*" multiple style={{ display:"none" }} onChange={onGalleryChange} />
             <input ref={cameraRef}  type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={onCameraChange} />
 
-            {/* Hero */}
             <div className="upload-hero">
               <div className="upload-hero-icon">📓</div>
               <h1>Turn notes into insights</h1>
@@ -942,7 +978,6 @@ export default function App() {
             </div>
 
             <div className="upload-well">
-              {/* Drop zone */}
               <div
                 className={`drop ${dragOver?"over":""} ${images.length?"drop-compact":""}`}
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -968,7 +1003,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Thumbnails */}
               {images.length > 0 && (
                 <div className="img-grid">
                   {images.map((img, idx) => (
@@ -984,7 +1018,6 @@ export default function App() {
               {images.length === 0 && (
                 <>
                   <div className="section-divider">or</div>
-                  {/* Upload opts */}
                   <div className="upload-opts">
                     <button className="upload-opt" onClick={e => { e.stopPropagation(); galleryRef.current.click(); }}>
                       <span className="upload-opt-icon">🖼</span>
@@ -1004,7 +1037,6 @@ export default function App() {
                 </>
               )}
 
-              {/* Process button */}
               {loading ? (
                 <div className="loading-wrap">
                   <div className="loading-ring" />
@@ -1031,7 +1063,6 @@ export default function App() {
             </div>
 
             <div className="result-split">
-              {/* Notes panel */}
               <div className="result-panel" ref={notesCardRef}>
                 <div className="panel-hdr">
                   <div className="panel-label">Extracted Notes</div>
@@ -1052,7 +1083,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Diagram panel */}
               <div className="result-panel" ref={flowCardRef}>
                 <div className="panel-hdr">
                   <div className="panel-label">Flow Diagram</div>
