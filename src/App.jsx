@@ -1265,7 +1265,6 @@ export default function App() {
 
         <footer className="footer">
           <div className="footer-brand">Note<span>Forge</span></div>
-          <div className="footer-hint">AI-powered note extraction</div>
         </footer>
       </div>
     </>
