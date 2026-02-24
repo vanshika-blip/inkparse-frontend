@@ -66,7 +66,6 @@ function autoLayout(nodeList, edges) {
 }
 
 async function makeDocxBlob(title, notes) {
-  // Try cdnjs first, fall back to unpkg
   if (!window.docx) {
     await new Promise((res, rej) => {
       const load = src => new Promise((ok, fail) => {
@@ -86,15 +85,65 @@ async function makeDocxBlob(title, notes) {
   ch.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: title, bold: true, size: 36 })] }));
   ch.push(new Paragraph({ children: [new TextRun("")] }));
   for (const line of notes.split("\n")) {
-    if (/^# (.+)$/.test(line))       ch.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: line.replace(/^# /, ""),   bold: true, size: 32 })] }));
-    else if (/^## (.+)$/.test(line)) ch.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: line.replace(/^## /, ""),  bold: true, size: 28 })] }));
-    else if (/^### (.+)$/.test(line))ch.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun({ text: line.replace(/^### /, ""), bold: true, size: 24 })] }));
+    if (/^# (.+)$/.test(line))        ch.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: line.replace(/^# /, ""),   bold: true, size: 32 })] }));
+    else if (/^## (.+)$/.test(line))  ch.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: line.replace(/^## /, ""),  bold: true, size: 28 })] }));
+    else if (/^### (.+)$/.test(line)) ch.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun({ text: line.replace(/^### /, ""), bold: true, size: 24 })] }));
     else if (/^[-•] (.+)$/.test(line))ch.push(new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: line.replace(/^[-•] /, "") })] }));
-    else if (line.trim())             ch.push(new Paragraph({ children: [new TextRun({ text: line })], spacing: { after: 120 } }));
-    else                              ch.push(new Paragraph({ children: [new TextRun("")] }));
+    else if (line.trim())              ch.push(new Paragraph({ children: [new TextRun({ text: line })], spacing: { after: 120 } }));
+    else                               ch.push(new Paragraph({ children: [new TextRun("")] }));
   }
   const doc = new Document({ sections: [{ properties: {}, children: ch }] });
   return Packer.toBlob(doc);
+}
+
+// ── SVG → JPG (fixed: no html2canvas, pure canvas approach) ──────────────────
+async function svgToJpgBlob(svgElement) {
+  // Inline all styles and fonts into a standalone SVG string
+  const clone = svgElement.cloneNode(true);
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+
+  // Force explicit dimensions
+  const bbox = svgElement.getBoundingClientRect();
+  const w = svgElement.getAttribute("width") || Math.ceil(bbox.width) || 1200;
+  const h = svgElement.getAttribute("height") || Math.ceil(bbox.height) || 900;
+  clone.setAttribute("width", w);
+  clone.setAttribute("height", h);
+
+  // Embed Google Fonts as base64 is complex; use a system fallback in export
+  // Remove font imports from <defs> to keep SVG self-contained
+  const styleEls = clone.querySelectorAll("style");
+  styleEls.forEach(s => s.remove());
+
+  // Add a background rect
+  const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  bg.setAttribute("x", "0"); bg.setAttribute("y", "0");
+  bg.setAttribute("width", w); bg.setAttribute("height", h);
+  bg.setAttribute("fill", "#F2F4FB");
+  clone.insertBefore(bg, clone.firstChild);
+
+  const svgStr = new XMLSerializer().serializeToString(clone);
+  const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const scale = 2; // retina
+      canvas.width  = Number(w) * scale;
+      canvas.height = Number(h) * scale;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(scale, scale);
+      ctx.fillStyle = "#F2F4FB";
+      ctx.fillRect(0, 0, Number(w), Number(h));
+      ctx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(b => resolve(b), "image/jpeg", 0.95);
+    };
+    img.onerror = (e) => { URL.revokeObjectURL(url); reject(new Error("SVG render failed")); };
+    img.src = url;
+  });
 }
 
 // ── NODE COLORS ───────────────────────────────────────────────
@@ -213,7 +262,7 @@ function FlowEditor({ nodes, edges, onChange }) {
 
   const allNodes = Object.values(nodes);
   const canvasW = Math.max(1200, ...allNodes.map(n => n.x + NW + 120));
-  const canvasH = Math.max(900, ...allNodes.map(n => n.y + NH + 120));
+  const canvasH = Math.max(900,  ...allNodes.map(n => n.y + NH + 120));
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", minHeight:0 }}>
@@ -287,7 +336,7 @@ function FlowEditor({ nodes, edges, onChange }) {
                       <rect x={midX-e.label.length*3-8} y={midY-9} width={e.label.length*6+16} height={18} rx={9}
                         fill="#F7F8FC" stroke={isSel?"#2E4F80":"#4A6FA5"} strokeWidth={1} />
                       <text x={midX} y={midY+1} textAnchor="middle" dominantBaseline="middle"
-                        fill="#4A6FA5" fontSize={9} fontFamily="'Source Code Pro',monospace" letterSpacing="1">{e.label}</text>
+                        fill="#4A6FA5" fontSize={9} fontFamily="monospace" letterSpacing="1">{e.label}</text>
                     </g>
                   )}
                   {isSel && (
@@ -328,7 +377,7 @@ function FlowEditor({ nodes, edges, onChange }) {
                   )}
                   <rect x={x} y={y} width={3} height={NH} rx={2} fill={col.stroke} opacity={0.6} style={{ pointerEvents:"none" }} />
                   <text x={x+NW/2} y={y+NH/2+1} textAnchor="middle" dominantBaseline="middle"
-                    fill={col.text} fontSize={10} fontFamily="'Source Code Pro',monospace" fontWeight="500" letterSpacing="0.5"
+                    fill={col.text} fontSize={10} fontFamily="monospace" fontWeight="500" letterSpacing="0.5"
                     style={{ pointerEvents:"none", userSelect:"none" }}>
                     {n.label.length > 22 ? n.label.slice(0,20)+"…" : n.label}
                   </text>
@@ -393,19 +442,11 @@ const css = `
     --muted2:#B0BECC;
     --r:8px;
     --r-lg:14px;
-    --nav-h:52px;
+    --nav-h:56px;
   }
 
   html,body{height:100%}
-
-  body{
-    background:var(--bg);
-    color:var(--text);
-    font-family:'Source Code Pro',monospace;
-    -webkit-font-smoothing:antialiased;
-    overflow-x:hidden;
-  }
-
+  body{background:var(--bg);color:var(--text);font-family:'Source Code Pro',monospace;-webkit-font-smoothing:antialiased;overflow-x:hidden}
   #root{height:100%}
   .app{min-height:100%;position:relative;z-index:1;display:flex;flex-direction:column}
   .app.result-mode{height:100vh;overflow:hidden}
@@ -413,99 +454,135 @@ const css = `
   /* ── TOPNAV ── */
   .topnav{
     height:var(--nav-h);flex-shrink:0;
-    background:rgba(255,255,255,0.94);
+    background:rgba(255,255,255,0.96);
     backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
     border-bottom:1px solid var(--border);
     display:flex;align-items:center;justify-content:space-between;
-    padding:0 32px;z-index:100;position:sticky;top:0;
+    padding:0 24px;z-index:100;position:sticky;top:0;
     box-shadow:0 1px 12px rgba(74,111,165,0.07);
   }
   .brand{display:flex;align-items:center;gap:10px}
   .brand-logo{
-    width:30px;height:30px;border-radius:7px;flex-shrink:0;
+    width:32px;height:32px;border-radius:8px;flex-shrink:0;
     border:1px solid var(--border2);
     background:linear-gradient(135deg,#EEF3FB,#D8E4F5);
-    display:flex;align-items:center;justify-content:center;font-size:14px;
+    display:flex;align-items:center;justify-content:center;font-size:15px;
     box-shadow:0 2px 8px rgba(74,111,165,0.1);
   }
-  .brand-name{font-family:'Lora',serif;font-size:17px;font-weight:700;color:var(--text);letter-spacing:-0.3px}
+  .brand-name{font-family:'Lora',serif;font-size:18px;font-weight:700;color:var(--text);letter-spacing:-0.3px}
   .nav-right{display:flex;align-items:center;gap:10px}
-  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 0 2px rgba(46,125,82,0.2)}
   .btn-ghost{
-    font-family:'Source Code Pro',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+    font-family:'Source Code Pro',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
     font-weight:500;border:1px solid var(--border);color:var(--muted);
     background:transparent;cursor:pointer;border-radius:var(--r);
-    padding:7px 14px;transition:all .2s;white-space:nowrap;
+    padding:8px 16px;transition:all .2s;white-space:nowrap;
   }
   .btn-ghost:hover{border-color:var(--accent);color:var(--accent);background:rgba(74,111,165,0.04)}
 
   /* ── UPLOAD PAGE ── */
   .upload-page{
     flex:1;display:flex;flex-direction:column;align-items:center;
-    justify-content:flex-start;
+    justify-content:center;
     min-height:calc(100vh - var(--nav-h));
-    padding:52px 24px 72px;
+    padding:40px 20px 60px;
+    background: radial-gradient(ellipse at 60% 0%, rgba(74,111,165,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 10% 80%, rgba(124,92,191,0.04) 0%, transparent 50%),
+                var(--bg);
   }
-  .upload-well{
-    width:100%;max-width:600px;
-    display:flex;flex-direction:column;gap:14px;
+
+  .upload-hero{
+    text-align:center;margin-bottom:36px;
   }
+  .upload-hero-icon{
+    width:64px;height:64px;margin:0 auto 16px;
+    background:linear-gradient(135deg,#EEF3FB,#D8E4F5);
+    border:1px solid var(--border2);border-radius:16px;
+    display:flex;align-items:center;justify-content:center;font-size:28px;
+    box-shadow:0 4px 20px rgba(74,111,165,0.12);
+  }
+  .upload-hero h1{font-family:'Lora',serif;font-size:clamp(22px,5vw,32px);font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.2}
+  .upload-hero p{font-size:12px;color:var(--muted);letter-spacing:0.5px;line-height:1.7;max-width:360px;margin:0 auto}
+
+  .upload-well{width:100%;max-width:560px;display:flex;flex-direction:column;gap:12px}
 
   /* ── DROP ZONE ── */
   .drop{
-    border:1.5px dashed var(--border2);background:var(--surf);
-    border-radius:var(--r-lg);padding:36px 28px;text-align:center;
+    border:2px dashed var(--border2);background:var(--surf);
+    border-radius:var(--r-lg);padding:44px 28px;text-align:center;
     cursor:pointer;transition:all .3s;
-    min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
     position:relative;overflow:hidden;
-    box-shadow:0 2px 12px rgba(74,111,165,0.05);
+    box-shadow:0 2px 16px rgba(74,111,165,0.06);
   }
-  .drop:hover,.drop.over{border-color:var(--accent);box-shadow:0 4px 24px rgba(74,111,165,0.12)}
-  .drop-icon{font-size:28px;margin-bottom:8px}
-  .drop-title{font-family:'Lora',serif;font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px}
-  .drop-hint{margin-top:6px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2)}
-  .drop-compact{min-height:72px!important;padding:12px 18px!important;flex-direction:row!important;gap:10px}
+  .drop::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,rgba(74,111,165,0.03),transparent 50%);
+    pointer-events:none;
+  }
+  .drop:hover,.drop.over{
+    border-color:var(--accent);
+    box-shadow:0 8px 32px rgba(74,111,165,0.14);
+    transform:translateY(-1px);
+  }
+  .drop-icon{font-size:36px;margin-bottom:12px;display:block}
+  .drop-title{font-family:'Lora',serif;font-size:17px;font-weight:600;color:var(--text);margin-bottom:6px}
+  .drop-sub{font-size:11px;color:var(--muted);letter-spacing:0.3px}
+  .drop-hint{margin-top:10px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2)}
+
+  /* compact drop when images loaded */
+  .drop-compact{padding:16px 20px!important;flex-direction:row!important;gap:12px;text-align:left!important}
+  .drop-compact .drop-icon{font-size:20px;margin-bottom:0;flex-shrink:0}
+  .drop-compact .drop-title{font-size:13px;margin-bottom:2px}
 
   /* ── THUMBNAILS ── */
-  .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}
-  .img-thumb{position:relative;border-radius:7px;overflow:hidden;border:1px solid var(--border);aspect-ratio:1;background:var(--surf2);transition:all .2s}
-  .img-thumb:hover{border-color:var(--accent);transform:scale(1.04);box-shadow:0 4px 16px rgba(74,111,165,0.15)}
+  .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+  .img-thumb{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border);aspect-ratio:1;background:var(--surf2);transition:all .2s}
+  .img-thumb:hover{border-color:var(--accent);transform:scale(1.05);box-shadow:0 4px 16px rgba(74,111,165,0.15)}
   .img-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-  .img-thumb-num{position:absolute;bottom:4px;left:6px;font-size:8px;font-weight:600;color:var(--text);background:rgba(255,255,255,0.88);padding:1px 4px;border-radius:3px}
-  .img-thumb-del{position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;border:none;cursor:pointer;background:rgba(192,54,74,0.85);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
+  .img-thumb-num{position:absolute;bottom:4px;left:5px;font-size:8px;font-weight:600;color:var(--text);background:rgba(255,255,255,0.9);padding:1px 4px;border-radius:3px}
+  .img-thumb-del{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;border:none;cursor:pointer;background:rgba(192,54,74,0.85);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;font-family:sans-serif}
   .img-thumb:hover .img-thumb-del{opacity:1}
 
   /* ── UPLOAD OPTS ── */
   .upload-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .upload-opt{display:flex;align-items:center;gap:10px;padding:12px 15px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);cursor:pointer;transition:all .2s;box-shadow:0 1px 4px rgba(74,111,165,0.04)}
-  .upload-opt:hover{border-color:var(--accent);background:rgba(74,111,165,0.03);box-shadow:0 4px 16px rgba(74,111,165,0.08)}
-  .upload-opt-icon{font-size:16px;flex-shrink:0}
-  .upload-opt-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);font-weight:600}
+  .upload-opt{
+    display:flex;align-items:center;gap:12px;padding:14px 16px;
+    border:1px solid var(--border);border-radius:var(--r);background:var(--surf);
+    cursor:pointer;transition:all .2s;
+    box-shadow:0 1px 6px rgba(74,111,165,0.04);
+  }
+  .upload-opt:hover{border-color:var(--accent);background:rgba(74,111,165,0.03);box-shadow:0 4px 20px rgba(74,111,165,0.1);transform:translateY(-1px)}
+  .upload-opt:active{transform:translateY(0)}
+  .upload-opt-icon{font-size:18px;flex-shrink:0}
+  .upload-opt-text{}
+  .upload-opt-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);font-weight:600;display:block}
+  .upload-opt-desc{font-size:9px;color:var(--muted);display:block;margin-top:1px}
 
   /* ── PRIMARY BUTTON ── */
   .btn-primary{
     font-family:'Source Code Pro',monospace;
     background:linear-gradient(135deg,var(--accent),var(--accent2));
-    color:#fff;width:100%;justify-content:center;padding:14px;
+    color:#fff;width:100%;justify-content:center;padding:16px;
     font-size:11px;letter-spacing:2.5px;text-transform:uppercase;font-weight:600;
-    box-shadow:0 4px 20px rgba(74,111,165,0.3);
+    box-shadow:0 4px 24px rgba(74,111,165,0.32);
     border:none;cursor:pointer;border-radius:var(--r);
-    display:flex;align-items:center;gap:8px;transition:all .2s;
+    display:flex;align-items:center;gap:8px;transition:all .25s;
   }
-  .btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(74,111,165,0.4)}
+  .btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 32px rgba(74,111,165,0.42)}
   .btn-primary:active:not(:disabled){transform:translateY(0)}
   .btn-primary:disabled{opacity:.4;cursor:not-allowed}
 
   /* ── LOADING ── */
   .loading-wrap{text-align:center;padding:28px 16px}
-  .loading-ring{width:38px;height:38px;margin:0 auto 14px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .8s linear infinite}
+  .loading-ring{width:40px;height:40px;margin:0 auto 16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .loading-msg{font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;text-transform:uppercase}
-  .progress-track{width:150px;margin:0 auto;height:2px;background:var(--border);border-radius:2px;overflow:hidden}
+  .loading-msg{font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:12px;text-transform:uppercase}
+  .progress-track{width:160px;margin:0 auto;height:2px;background:var(--border);border-radius:2px;overflow:hidden}
   .progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .6s ease}
 
   /* ── ERROR ── */
-  .err-box{background:rgba(192,54,74,0.05);border:1px solid rgba(192,54,74,0.2);border-radius:var(--r);padding:10px 14px;color:var(--red);font-size:10px;line-height:1.7}
+  .err-box{background:rgba(192,54,74,0.05);border:1px solid rgba(192,54,74,0.2);border-radius:var(--r);padding:12px 16px;color:var(--red);font-size:11px;line-height:1.7}
   .err-box::before{content:'⚠  '}
 
   /* ── RESULT PAGE ── */
@@ -513,21 +590,20 @@ const css = `
 
   .res-topbar{
     flex-shrink:0;background:rgba(255,255,255,0.96);backdrop-filter:blur(16px);
-    border-bottom:1px solid var(--border);padding:9px 32px;
+    border-bottom:1px solid var(--border);padding:10px 24px;
     display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
     box-shadow:0 1px 8px rgba(74,111,165,0.05);
   }
   .res-title{font-family:'Lora',serif;font-size:16px;font-weight:600;color:var(--text);letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60vw}
 
   .result-split{flex:1;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;min-height:0}
-
   .result-panel{display:flex;flex-direction:column;overflow:hidden;min-height:0;border-right:1px solid var(--border)}
   .result-panel:last-child{border-right:none}
 
-  .panel-hdr{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:9px 22px;background:var(--surf);border-bottom:1px solid var(--border)}
+  .panel-hdr{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:10px 20px;background:var(--surf);border-bottom:1px solid var(--border)}
   .panel-label{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:8px;font-weight:600}
   .panel-label::before{content:'';width:10px;height:1px;background:var(--accent)}
-  .panel-actions{display:flex;align-items:center;gap:5px}
+  .panel-actions{display:flex;align-items:center;gap:5px;flex-wrap:nowrap}
 
   .notes-scroll{flex:1;overflow-y:auto;min-height:0}
   .notes-scroll::-webkit-scrollbar{width:4px}
@@ -540,14 +616,11 @@ const css = `
   .notes-prev{padding:24px 28px}
 
   .diagram-body-outer{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
-
   .diagram-body{flex:1;overflow:auto;min-height:0;position:relative;background:var(--surf2)}
   .diagram-body::-webkit-scrollbar{width:6px;height:6px}
   .diagram-body::-webkit-scrollbar-track{background:var(--surf2)}
   .diagram-body::-webkit-scrollbar-thumb{background:var(--muted2);border-radius:3px}
-  .diagram-body::-webkit-scrollbar-thumb:hover{background:var(--accent3)}
   .diagram-body::-webkit-scrollbar-corner{background:var(--surf2)}
-  .diagram-body{scrollbar-width:thin;scrollbar-color:var(--muted2) var(--surf2)}
 
   /* Notes rendered */
   .nc h1{font-family:'Lora',serif;font-size:18px;font-weight:700;color:var(--text);margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
@@ -596,9 +669,9 @@ const css = `
   .fe-hint-bar strong{color:var(--text2);font-weight:500}
 
   /* ── EDIT POPUP ── */
-  .ep-overlay{position:fixed;inset:0;background:rgba(26,34,53,0.4);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);animation:fadeIn .15s ease}
+  .ep-overlay{position:fixed;inset:0;background:rgba(26,34,53,0.4);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);animation:fadeIn .15s ease;padding:20px}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-  .ep{background:var(--surf);border:1px solid var(--border2);border-radius:var(--r-lg);padding:26px;width:310px;box-shadow:0 16px 48px rgba(26,34,53,0.14);animation:slideUp .2s ease}
+  .ep{background:var(--surf);border:1px solid var(--border2);border-radius:var(--r-lg);padding:26px;width:100%;max-width:310px;box-shadow:0 16px 48px rgba(26,34,53,0.14);animation:slideUp .2s ease}
   @keyframes slideUp{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
   .ep-title{font-family:'Lora',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:14px}
   .ep-input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--text);font-family:'Source Code Pro',monospace;font-size:12px;outline:none;margin-bottom:12px;transition:border-color .15s}
@@ -610,45 +683,82 @@ const css = `
   .ep-cancel:hover{border-color:var(--red);color:var(--red)}
 
   /* ── FOOTER ── */
-  .dl-err{flex-shrink:0;background:rgba(192,54,74,0.05);border:1px solid rgba(192,54,74,0.18);border-radius:var(--r);padding:7px 14px;color:var(--red);font-size:10px;margin:6px 24px}
-  .footer{flex-shrink:0;padding:10px 32px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surf)}
+  .dl-err{flex-shrink:0;background:rgba(192,54,74,0.05);border:1px solid rgba(192,54,74,0.18);border-radius:var(--r);padding:7px 14px;color:var(--red);font-size:10px;margin:6px 20px}
+  .footer{flex-shrink:0;padding:12px 24px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surf)}
   .footer-brand{font-family:'Lora',serif;font-size:13px;font-weight:600;color:var(--text2)}
   .footer-brand span{color:var(--accent)}
+  .footer-hint{font-size:9px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase}
+
+  /* ── DIVIDER ── */
+  .section-divider{display:flex;align-items:center;gap:12px;color:var(--muted2);font-size:9px;letter-spacing:2px;text-transform:uppercase;margin:4px 0}
+  .section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border)}
 
   /* ── RESPONSIVE ── */
-  @media(max-width:900px){
-    .upload-page{padding:32px 20px 52px}
+  @media(max-width:1024px){
+    .result-split{grid-template-columns:1fr 1fr}
     .result-page{height:auto;overflow:visible}
+    .diagram-body{height:380px}
+    .notes-scroll{max-height:380px;overflow-y:auto}
+  }
+
+  @media(max-width:768px){
+    :root{--nav-h:52px}
+    .topnav{padding:0 16px}
+    .upload-page{padding:28px 16px 48px;justify-content:flex-start;padding-top:40px}
+    .upload-hero{margin-bottom:28px}
+    .upload-hero-icon{width:52px;height:52px;font-size:22px}
+
+    .result-page{height:auto;overflow:visible}
+    .app.result-mode{height:auto;overflow:visible}
     .result-split{grid-template-columns:1fr;height:auto;overflow:visible}
     .result-panel{height:auto;overflow:visible;border-right:none;border-bottom:1px solid var(--border)}
     .result-panel:last-child{border-bottom:none}
-    .diagram-body{height:480px}
-    .notes-scroll{max-height:420px;overflow-y:auto}
-  }
-  @media(max-width:600px){
-    :root{--nav-h:48px}
-    .brand-name{font-size:16px}
-    .topnav{padding:0 16px}
-    .upload-page{padding:24px 16px 48px}
-    .upload-opts{grid-template-columns:1fr}
-    .drop{min-height:130px;padding:24px 14px}
+    .diagram-body{height:420px}
+    .notes-scroll{max-height:400px;overflow-y:auto}
+
     .res-topbar{padding:8px 16px}
-    .panel-hdr{padding:7px 14px;flex-wrap:wrap}
-    .panel-actions{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
+    .res-title{font-size:14px;max-width:55vw}
+    .panel-hdr{padding:8px 14px}
+    .panel-actions{gap:4px;overflow-x:auto;padding-bottom:2px}
     .dl-btn,.toggle-btn{flex-shrink:0}
-    .fe-toolbar{overflow-x:auto;flex-wrap:nowrap;padding:5px 10px}
+
+    .fe-toolbar{overflow-x:auto;flex-wrap:nowrap;padding:5px 10px;-webkit-overflow-scrolling:touch}
     .fe-btn{flex-shrink:0}
-    .diagram-body{height:400px}
-    .notes-scroll{max-height:360px}
+    .fe-hint-bar{font-size:9px}
     .footer{padding:10px 16px}
-    .dl-err{margin:5px 14px}
+    .dl-err{margin:5px 12px}
+    .notes-ta,.notes-prev{padding:16px 18px}
   }
+
+  @media(max-width:480px){
+    :root{--nav-h:50px}
+    .brand-name{font-size:16px}
+    .upload-opts{grid-template-columns:1fr 1fr}
+    .drop{padding:32px 20px}
+    .drop-compact{padding:14px 16px!important}
+    .img-grid{grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:7px}
+    .btn-primary{padding:14px;font-size:10px}
+    .upload-hero h1{font-size:22px}
+    .upload-hero p{font-size:11px}
+    .result-split{grid-template-columns:1fr}
+    .diagram-body{height:360px}
+    .notes-scroll{max-height:340px}
+    .panel-hdr{flex-wrap:wrap}
+    .res-title{font-size:13px}
+  }
+
   @media(min-width:1400px){
     .topnav,.res-topbar,.footer{padding-left:52px;padding-right:52px}
-    .panel-hdr{padding:10px 28px}
-    .notes-ta,.notes-prev{padding:28px 36px}
+    .panel-hdr{padding:11px 30px}
+    .notes-ta,.notes-prev{padding:30px 36px}
   }
-  @media(hover:none){.btn-primary:hover:not(:disabled){transform:none}}
+
+  @media(hover:none){
+    .btn-primary:hover:not(:disabled){transform:none}
+    .upload-opt:hover{transform:none}
+    .drop:hover{transform:none}
+    .img-thumb-del{opacity:1}
+  }
 `;
 
 // ── MAIN APP ──────────────────────────────────────────────────
@@ -670,8 +780,8 @@ export default function App() {
 
   const galleryRef = useRef();
   const cameraRef  = useRef();
-  const notesCardRef = useRef();
-  const flowCardRef  = useRef();
+  const notesCardRef  = useRef();
+  const flowCardRef   = useRef();
 
   const BACKEND_URL = "https://inkparse-backend.onrender.com";
 
@@ -729,6 +839,12 @@ export default function App() {
     } finally { setLoading(false); }
   };
 
+  const triggerDownload = (url, name) => {
+    const a = document.createElement("a"); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  };
+
+  // ── NOTES JPG via html2canvas ──
   const loadH2C = () => new Promise((res, rej) => {
     if (window.html2canvas) return res();
     const s = document.createElement("script");
@@ -736,11 +852,6 @@ export default function App() {
     s.onload = res; s.onerror = () => rej(new Error("html2canvas failed"));
     document.head.appendChild(s);
   });
-
-  const triggerDownload = (url, name) => {
-    const a = document.createElement("a"); a.href = url; a.download = name;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  };
 
   const dlNotesJpg = async () => {
     setDlBusy("notes-jpg"); setDlError("");
@@ -750,7 +861,7 @@ export default function App() {
       if (!target) throw new Error("Notes panel not found");
       const canvas = await window.html2canvas(target, { scale:2, backgroundColor:"#FFFFFF", useCORS:true, logging:false });
       triggerDownload(canvas.toDataURL("image/jpeg",0.95), `${title||"notes"}.jpg`);
-    } catch(e) { setDlError("JPG export failed: " + (e?.message || String(e) || "unknown error")); }
+    } catch(e) { setDlError("JPG export failed: " + (e?.message || "unknown error")); }
     finally { setDlBusy(""); }
   };
 
@@ -761,19 +872,21 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       triggerDownload(url, `${title||"notes"}.docx`);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
-    } catch(e) { setDlError("DOCX export failed: " + (e?.message || String(e) || "unknown error")); }
+    } catch(e) { setDlError("DOCX export failed: " + (e?.message || "unknown error")); }
     finally { setDlBusy(""); }
   };
 
+  // ── DIAGRAM JPG — fixed: serialize SVG → Image → Canvas (no html2canvas) ──
   const dlDiagramJpg = async () => {
     setDlBusy("diag-jpg"); setDlError("");
     try {
-      await loadH2C();
       const svgEl = flowCardRef.current?.querySelector("svg");
-      if (!svgEl) throw new Error("Diagram not found");
-      const canvas = await window.html2canvas(svgEl, { scale:2, backgroundColor:"#F2F4FB", useCORS:true, logging:false });
-      triggerDownload(canvas.toDataURL("image/jpeg",0.95), `${title||"diagram"}.jpg`);
-    } catch(e) { setDlError("JPG export failed: " + (e?.message || String(e) || "unknown error")); }
+      if (!svgEl) throw new Error("Diagram SVG not found");
+      const blob = await svgToJpgBlob(svgEl);
+      const url = URL.createObjectURL(blob);
+      triggerDownload(url, `${title||"diagram"}.jpg`);
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    } catch(e) { setDlError("JPG export failed: " + (e?.message || "unknown error")); }
     finally { setDlBusy(""); }
   };
 
@@ -810,7 +923,7 @@ export default function App() {
           </div>
           <div className="nav-right">
             {step === "result" && <button className="btn-ghost" onClick={reset}>↩ New</button>}
-            <div className="status-dot" />
+            <div className="status-dot" title="Connected" />
           </div>
         </nav>
 
@@ -818,9 +931,17 @@ export default function App() {
         {step === "upload" && (
           <div className="upload-page">
             <input ref={galleryRef} type="file" accept="image/*" multiple style={{ display:"none" }} onChange={onGalleryChange} />
-            <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={onCameraChange} />
+            <input ref={cameraRef}  type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={onCameraChange} />
+
+            {/* Hero */}
+            <div className="upload-hero">
+              <div className="upload-hero-icon">📓</div>
+              <h1>Turn notes into insights</h1>
+              <p>Upload a photo of your handwritten notes and get structured text with a flow diagram in seconds.</p>
+            </div>
 
             <div className="upload-well">
+              {/* Drop zone */}
               <div
                 className={`drop ${dragOver?"over":""} ${images.length?"drop-compact":""}`}
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -830,18 +951,23 @@ export default function App() {
               >
                 {images.length === 0 ? (
                   <>
-                    <span className="drop-icon">📓</span>
-                    <div className="drop-title">Drop images here, or click to upload</div>
-                    <div className="drop-hint">JPG · PNG · WEBP · Multiple files supported</div>
+                    <span className="drop-icon">🖼️</span>
+                    <div className="drop-title">Drop images here</div>
+                    <div className="drop-sub">or click to browse files</div>
+                    <div className="drop-hint">JPG · PNG · WEBP · Multiple pages supported</div>
                   </>
                 ) : (
                   <>
-                    <span className="drop-icon" style={{ fontSize:18, marginBottom:0 }}>＋</span>
-                    <div className="drop-title" style={{ fontSize:13 }}>Add pages &nbsp;·&nbsp; {images.length} loaded</div>
+                    <span className="drop-icon">＋</span>
+                    <div>
+                      <div className="drop-title">{images.length} image{images.length>1?"s":""} ready</div>
+                      <div className="drop-sub">Click to add more pages</div>
+                    </div>
                   </>
                 )}
               </div>
 
+              {/* Thumbnails */}
               {images.length > 0 && (
                 <div className="img-grid">
                   {images.map((img, idx) => (
@@ -854,17 +980,30 @@ export default function App() {
                 </div>
               )}
 
-              <div className="upload-opts">
-                <button className="upload-opt" onClick={e => { e.stopPropagation(); galleryRef.current.click(); }}>
-                  <span className="upload-opt-icon">🖼</span>
-                  <div className="upload-opt-label">Upload Files</div>
-                </button>
-                <button className="upload-opt" onClick={e => { e.stopPropagation(); cameraRef.current.click(); }}>
-                  <span className="upload-opt-icon">📷</span>
-                  <div className="upload-opt-label">Take Photo</div>
-                </button>
-              </div>
+              {images.length === 0 && (
+                <>
+                  <div className="section-divider">or</div>
+                  {/* Upload opts */}
+                  <div className="upload-opts">
+                    <button className="upload-opt" onClick={e => { e.stopPropagation(); galleryRef.current.click(); }}>
+                      <span className="upload-opt-icon">🖼</span>
+                      <div className="upload-opt-text">
+                        <span className="upload-opt-label">Gallery</span>
+                        <span className="upload-opt-desc">Browse your files</span>
+                      </div>
+                    </button>
+                    <button className="upload-opt" onClick={e => { e.stopPropagation(); cameraRef.current.click(); }}>
+                      <span className="upload-opt-icon">📷</span>
+                      <div className="upload-opt-text">
+                        <span className="upload-opt-label">Camera</span>
+                        <span className="upload-opt-desc">Capture instantly</span>
+                      </div>
+                    </button>
+                  </div>
+                </>
+              )}
 
+              {/* Process button */}
               {loading ? (
                 <div className="loading-wrap">
                   <div className="loading-ring" />
@@ -873,7 +1012,7 @@ export default function App() {
                 </div>
               ) : (
                 <button className="btn-primary" disabled={!images.length || loading} onClick={analyze}>
-                  {images.length > 1 ? `Process ${images.length} pages` : "Process"}
+                  {images.length > 1 ? `✨ Process ${images.length} pages` : "✨ Process notes"}
                 </button>
               )}
 
@@ -891,6 +1030,7 @@ export default function App() {
             </div>
 
             <div className="result-split">
+              {/* Notes panel */}
               <div className="result-panel" ref={notesCardRef}>
                 <div className="panel-hdr">
                   <div className="panel-label">Extracted Notes</div>
@@ -911,6 +1051,7 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Diagram panel */}
               <div className="result-panel" ref={flowCardRef}>
                 <div className="panel-hdr">
                   <div className="panel-label">Flow Diagram</div>
@@ -931,6 +1072,7 @@ export default function App() {
 
         <footer className="footer">
           <div className="footer-brand">Note<span>Forge</span></div>
+          <div className="footer-hint">AI-powered note extraction</div>
         </footer>
       </div>
     </>
