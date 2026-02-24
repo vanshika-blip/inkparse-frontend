@@ -66,30 +66,34 @@ function autoLayout(nodeList, edges) {
 }
 
 async function makeDocxBlob(title, notes) {
+  // Try cdnjs first, fall back to unpkg
   if (!window.docx) {
     await new Promise((res, rej) => {
-      const s = document.createElement("script");
-      s.src = "https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js";
-      s.onload = res; s.onerror = () => rej(new Error("docx load failed"));
-      document.head.appendChild(s);
+      const load = src => new Promise((ok, fail) => {
+        const s = document.createElement("script");
+        s.src = src; s.onload = ok;
+        s.onerror = () => fail(new Error("failed: " + src));
+        document.head.appendChild(s);
+      });
+      load("https://unpkg.com/docx@8.2.3/build/index.umd.js")
+        .then(res)
+        .catch(() => load("https://cdn.jsdelivr.net/npm/docx@8.2.3/build/index.umd.js").then(res).catch(rej));
     });
   }
-  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, LevelFormat } = window.docx;
+  if (!window.docx) throw new Error("docx library unavailable");
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel } = window.docx;
   const ch = [];
   ch.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: title, bold: true, size: 36 })] }));
   ch.push(new Paragraph({ children: [new TextRun("")] }));
   for (const line of notes.split("\n")) {
-    if (/^# (.+)$/.test(line)) ch.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: line.replace(/^# /, ""), bold: true, size: 32 })] }));
-    else if (/^## (.+)$/.test(line)) ch.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: line.replace(/^## /, ""), bold: true, size: 28 })] }));
-    else if (/^### (.+)$/.test(line)) ch.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun({ text: line.replace(/^### /, ""), bold: true, size: 24 })] }));
-    else if (/^[-•] (.+)$/.test(line)) ch.push(new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: line.replace(/^[-•] /, "") })] }));
-    else if (line.trim()) ch.push(new Paragraph({ children: [new TextRun({ text: line })], spacing: { after: 120 } }));
-    else ch.push(new Paragraph({ children: [new TextRun("")] }));
+    if (/^# (.+)$/.test(line))       ch.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: line.replace(/^# /, ""),   bold: true, size: 32 })] }));
+    else if (/^## (.+)$/.test(line)) ch.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: line.replace(/^## /, ""),  bold: true, size: 28 })] }));
+    else if (/^### (.+)$/.test(line))ch.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun({ text: line.replace(/^### /, ""), bold: true, size: 24 })] }));
+    else if (/^[-•] (.+)$/.test(line))ch.push(new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: line.replace(/^[-•] /, "") })] }));
+    else if (line.trim())             ch.push(new Paragraph({ children: [new TextRun({ text: line })], spacing: { after: 120 } }));
+    else                              ch.push(new Paragraph({ children: [new TextRun("")] }));
   }
-  const doc = new Document({
-    numbering: { config: [{ reference: "nums", levels: [{ level: 0, format: LevelFormat.DECIMAL, text: "%1.", alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 720, hanging: 360 } } } }] }] },
-    sections: [{ properties: {}, children: ch }]
-  });
+  const doc = new Document({ sections: [{ properties: {}, children: ch }] });
   return Packer.toBlob(doc);
 }
 
@@ -437,17 +441,14 @@ const css = `
 
   /* ── UPLOAD PAGE ── */
   .upload-page{
-    flex:1;display:flex;align-items:flex-start;justify-content:center;
+    flex:1;display:flex;flex-direction:column;align-items:center;
+    justify-content:flex-start;
     min-height:calc(100vh - var(--nav-h));
-    padding:48px 24px 72px;
+    padding:52px 24px 72px;
   }
   .upload-well{
-    width:100%;max-width:560px;
+    width:100%;max-width:600px;
     display:flex;flex-direction:column;gap:14px;
-  }
-  .upload-title{
-    font-family:'Lora',serif;font-size:15px;font-weight:600;
-    color:var(--text2);letter-spacing:-0.1px;margin-bottom:2px;
   }
 
   /* ── DROP ZONE ── */
@@ -616,7 +617,7 @@ const css = `
 
   /* ── RESPONSIVE ── */
   @media(max-width:900px){
-    .upload-page{padding:32px 20px 56px}
+    .upload-page{padding:32px 20px 52px}
     .result-page{height:auto;overflow:visible}
     .result-split{grid-template-columns:1fr;height:auto;overflow:visible}
     .result-panel{height:auto;overflow:visible;border-right:none;border-bottom:1px solid var(--border)}
@@ -745,9 +746,11 @@ export default function App() {
     setDlBusy("notes-jpg"); setDlError("");
     try {
       await loadH2C();
-      const canvas = await window.html2canvas(notesCardRef.current, { scale:2, backgroundColor:"#FFFFFF", useCORS:true, logging:false });
+      const target = notesCardRef.current?.querySelector(".notes-scroll") || notesCardRef.current;
+      if (!target) throw new Error("Notes panel not found");
+      const canvas = await window.html2canvas(target, { scale:2, backgroundColor:"#FFFFFF", useCORS:true, logging:false });
       triggerDownload(canvas.toDataURL("image/jpeg",0.95), `${title||"notes"}.jpg`);
-    } catch(e) { setDlError("JPG export failed: "+e.message); }
+    } catch(e) { setDlError("JPG export failed: " + (e?.message || String(e) || "unknown error")); }
     finally { setDlBusy(""); }
   };
 
@@ -758,7 +761,7 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       triggerDownload(url, `${title||"notes"}.docx`);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
-    } catch(e) { setDlError("DOCX export failed: "+e.message); }
+    } catch(e) { setDlError("DOCX export failed: " + (e?.message || String(e) || "unknown error")); }
     finally { setDlBusy(""); }
   };
 
@@ -770,7 +773,7 @@ export default function App() {
       if (!svgEl) throw new Error("Diagram not found");
       const canvas = await window.html2canvas(svgEl, { scale:2, backgroundColor:"#F2F4FB", useCORS:true, logging:false });
       triggerDownload(canvas.toDataURL("image/jpeg",0.95), `${title||"diagram"}.jpg`);
-    } catch(e) { setDlError("JPG export failed: "+e.message); }
+    } catch(e) { setDlError("JPG export failed: " + (e?.message || String(e) || "unknown error")); }
     finally { setDlBusy(""); }
   };
 
