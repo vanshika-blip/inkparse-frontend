@@ -1044,7 +1044,7 @@ export default function App() {
       document.body.removeChild(wrapper);
       triggerDownload(canvas.toDataURL("image/jpeg", 0.95), `${title||"notes"}.jpg`);
     } catch(e) {
-      try { document.querySelector('[data-noteforge-export]')?.remove(); } catch(_) {}
+      try { document.querySelector('[data-scribbld-export]')?.remove(); } catch(_) {}
       setDlError("JPG export failed: " + (e?.message || "unknown error"));
     }
     finally { setDlBusy(""); }
@@ -1099,7 +1099,7 @@ export default function App() {
         {/* ── NAV ── */}
         <nav className="topnav">
           <div className="brand">
-            <div className="brand-name">NoteForge</div>
+            <div className="brand-name">Scribbld</div>
           </div>
           <div className="nav-right">
             {step === "result" && <button className="btn-ghost" onClick={reset}>↩ New</button>}
@@ -1264,7 +1264,7 @@ export default function App() {
         )}
 
         <footer className="footer">
-          <div className="footer-brand">Note<span>Forge</span></div>
+          <div className="footer-brand">Scribbld</div>
         </footer>
       </div>
     </>
