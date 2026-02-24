@@ -441,13 +441,15 @@ const css = `
 
   /* ── UPLOAD PAGE ── */
   .upload-page{
-    flex:1;display:flex;flex-direction:column;align-items:center;
-    justify-content:flex-start;
+    flex:1;display:flex;flex-direction:column;
+    width:100%;
     min-height:calc(100vh - var(--nav-h));
-    padding:52px 24px 72px;
+    padding:52px 32px 72px;
+    background:var(--bg);
   }
   .upload-well{
-    width:100%;max-width:600px;
+    width:100%;max-width:640px;
+    margin:0 auto;
     display:flex;flex-direction:column;gap:14px;
   }
 
@@ -630,6 +632,7 @@ const css = `
     .brand-name{font-size:16px}
     .topnav{padding:0 16px}
     .upload-page{padding:24px 16px 48px}
+    .upload-well{max-width:100%}
     .upload-opts{grid-template-columns:1fr}
     .drop{min-height:130px;padding:24px 14px}
     .res-topbar{padding:8px 16px}
@@ -746,10 +749,29 @@ export default function App() {
     setDlBusy("notes-jpg"); setDlError("");
     try {
       await loadH2C();
-      const target = notesCardRef.current?.querySelector(".notes-scroll") || notesCardRef.current;
+      const target = notesCardRef.current;
       if (!target) throw new Error("Notes panel not found");
-      const canvas = await window.html2canvas(target, { scale:2, backgroundColor:"#FFFFFF", useCORS:true, logging:false });
-      triggerDownload(canvas.toDataURL("image/jpeg",0.95), `${title||"notes"}.jpg`);
+      await document.fonts.ready;
+      const canvas = await window.html2canvas(target, {
+        scale: 2,
+        backgroundColor: "#FFFFFF",
+        useCORS: true,
+        logging: false,
+        allowTaint: false,
+        foreignObjectRendering: false,
+        scrollX: 0,
+        scrollY: -window.scrollY,
+        windowWidth: document.documentElement.scrollWidth,
+        windowHeight: document.documentElement.scrollHeight,
+        onclone: (clonedDoc, clonedEl) => {
+          // Ensure the cloned panel is visible and not overflow-hidden
+          clonedEl.style.overflow = "visible";
+          clonedEl.style.height = "auto";
+          const scroll = clonedEl.querySelector(".notes-scroll");
+          if (scroll) { scroll.style.overflow = "visible"; scroll.style.maxHeight = "none"; }
+        }
+      });
+      triggerDownload(canvas.toDataURL("image/jpeg", 0.95), `${title || "notes"}.jpg`);
     } catch(e) { setDlError("JPG export failed: " + (e?.message || String(e) || "unknown error")); }
     finally { setDlBusy(""); }
   };
@@ -768,13 +790,49 @@ export default function App() {
   const dlDiagramJpg = async () => {
     setDlBusy("diag-jpg"); setDlError("");
     try {
-      await loadH2C();
       const svgEl = flowCardRef.current?.querySelector("svg");
       if (!svgEl) throw new Error("Diagram not found");
-      const canvas = await window.html2canvas(svgEl, { scale:2, backgroundColor:"#F2F4FB", useCORS:true, logging:false });
-      triggerDownload(canvas.toDataURL("image/jpeg",0.95), `${title||"diagram"}.jpg`);
-    } catch(e) { setDlError("JPG export failed: " + (e?.message || String(e) || "unknown error")); }
-    finally { setDlBusy(""); }
+
+      // Serialize SVG with inline styles and correct namespace
+      const clone = svgEl.cloneNode(true);
+      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+      // Embed the dotgrid pattern background as a solid rect so it renders
+      const bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      bgRect.setAttribute("x", "-5000"); bgRect.setAttribute("y", "-5000");
+      bgRect.setAttribute("width", "20000"); bgRect.setAttribute("height", "20000");
+      bgRect.setAttribute("fill", "#F2F4FB");
+      clone.insertBefore(bgRect, clone.firstChild);
+
+      const svgStr = new XMLSerializer().serializeToString(clone);
+      const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+
+      const img = new Image();
+      img.onload = () => {
+        const scale = 2;
+        const w = svgEl.clientWidth || svgEl.width.baseVal.value || 1200;
+        const h = svgEl.clientHeight || svgEl.height.baseVal.value || 900;
+        const canvas = document.createElement("canvas");
+        canvas.width = w * scale; canvas.height = h * scale;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#F2F4FB";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        triggerDownload(canvas.toDataURL("image/jpeg", 0.95), `${title || "diagram"}.jpg`);
+        setDlBusy("");
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        setDlError("JPG export failed: could not render SVG");
+        setDlBusy("");
+      };
+      img.src = url;
+    } catch(e) {
+      setDlError("JPG export failed: " + (e?.message || String(e)));
+      setDlBusy("");
+    }
   };
 
   const dlDiagramSvg = () => {
