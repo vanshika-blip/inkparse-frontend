@@ -3,7 +3,6 @@ import { useState, useEffect, useRef, useCallback, memo } from "react";
 // ── IMPORTANT: Set this to your Render backend URL ────────────────────────────
 const BACKEND_URL = "https://inkparse-backend.onrender.com";
 
-
 // ── Logo ──────────────────────────────────────────────────────────────────────
 const ScribbleLogo = ({ size = 36 }) => (
   <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
@@ -57,7 +56,7 @@ const css = `
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   :root{--bg:#000;--surf:#0A0A0A;--surf2:#111;--surf3:#161616;--border:rgba(0,255,135,0.15);--green:#00FF87;--green2:#00CC6A;--text:#E0FFE8;--muted:#3A7A50;--muted2:#4A9060;--r:8px}
   body{background:var(--bg);font-family:'Space Mono',monospace;color:var(--text);min-height:100vh}
-  .app{min-height:100vh;display:flex;flex-direction:column}
+  .app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
   /* ── Header ── */
   .hdr{background:var(--surf);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;box-shadow:0 4px 20px rgba(0,255,135,0.05)}
@@ -67,10 +66,10 @@ const css = `
   .badge{background:var(--green);color:#000;border-radius:4px;padding:2px 9px;font-size:11px;font-weight:700;font-family:'Space Mono',monospace}
 
   /* ── Layout ── */
-  .layout{display:flex;flex:1}
+  .layout{display:flex;flex:1;min-height:0;overflow:hidden}
 
   /* ── Sidenav ── */
-  .sidenav{width:220px;background:var(--surf);border-right:1px solid var(--border);padding:20px 10px;display:flex;flex-direction:column;gap:3px;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto}
+  .sidenav{width:220px;background:var(--surf);border-right:1px solid var(--border);padding:20px 10px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;flex-shrink:0}
   .sidenav-section{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;padding:14px 12px 5px;font-weight:700}
   .sidenav-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;background:none;border:none;color:var(--muted2);cursor:pointer;font-size:11px;font-family:'Space Mono',monospace;width:100%;text-align:left;transition:all .2s;border-left:2px solid transparent}
   .sidenav-btn:hover{background:var(--surf2);color:var(--text);border-left-color:var(--green);padding-left:10px}
@@ -81,10 +80,10 @@ const css = `
   .info-val{color:var(--green);font-weight:700}
 
   /* ── Main ── */
-  .main{flex:1;overflow:auto;display:flex;flex-direction:column}
+  .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
 
   /* ── Workspace ── */
-  .workspace{flex:1;display:flex;gap:14px;padding:14px;height:calc(100vh - 57px);min-height:0;overflow:hidden}
+  .workspace{flex:1;display:flex;gap:14px;padding:14px;min-height:0;overflow:hidden}
 
   /* ── Panel ── */
   .panel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden}
@@ -163,7 +162,7 @@ const css = `
   @keyframes lbar{from{background-position:200%}to{background-position:-200%}}
 
   /* ── Doc Creator ── */
-  .doc-workspace{flex:1;display:flex;gap:14px;padding:14px;height:calc(100vh - 57px);min-height:0;overflow:hidden}
+  .doc-workspace{flex:1;display:flex;gap:14px;padding:14px;min-height:0;overflow:hidden}
   .doc-input-col{width:320px;flex-shrink:0;display:flex;flex-direction:column;min-height:0}
   .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:4px}
   .doc-cards-scroll::-webkit-scrollbar{width:4px}
@@ -243,7 +242,7 @@ const css = `
     .sidenav{display:none!important}
     .bottom-nav{display:flex!important}
     .main{padding-bottom:68px}
-    .workspace,.doc-workspace{flex-direction:column;height:auto;overflow:auto}
+    .workspace,.doc-workspace{flex-direction:column;overflow-y:auto}
     .upload-panel,.doc-input-col{width:100%}
     .result-body{flex-direction:column}
     .edit-col{width:100%;border-right:none;border-bottom:1px solid var(--border);min-height:180px}
