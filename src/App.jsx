@@ -1,16 +1,14 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 
-// ── IMPORTANT: Set this to your Render backend URL ────────────────────────────
 const BACKEND_URL = "https://inkparse-backend.onrender.com";
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
-const ScribbleLogo = ({ size = 36 }) => (
+const ScribbleLogo = ({ size = 32 }) => (
   <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
-    <rect width="40" height="40" rx="6" fill="#000" stroke="#00FF87" strokeWidth="1"/>
-    <path d="M6 28 C8 24, 10 18, 13 22 C16 26, 17 14, 20 18 C23 22, 25 10, 28 16 C31 22, 33 20, 35 18"
-      fill="none" stroke="#00FF87" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    <rect x="8" y="12" width="7" height="5" rx="1" fill="none" stroke="#00FF87" strokeWidth="1.2"/>
-    <path d="M8 32 L32 32" stroke="#00FF87" strokeWidth="1.2" strokeLinecap="round"/>
+    <rect width="40" height="40" rx="8" fill="#111"/>
+    <path d="M7 27 C9 23, 11 17, 14 21 C17 25, 18 13, 21 17 C24 21, 26 9, 29 15 C32 21, 34 19, 36 17"
+      fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <rect x="8" y="11" width="8" height="6" rx="1.5" fill="none" stroke="#fff" strokeWidth="1.5"/>
   </svg>
 );
 
@@ -22,19 +20,21 @@ async function getMermaid() {
     mermaidLib = mod.default;
     mermaidLib.initialize({
       startOnLoad: false,
-      theme: "dark",
+      theme: "default",
       themeVariables: {
-        primaryColor: "#00FF87",
-        background: "#0A0A0A",
-        mainBkg: "#111",
-        nodeBorder: "#00FF87",
-        clusterBkg: "#111",
-        titleColor: "#00FF87",
-        edgeLabelBackground: "#111",
-        lineColor: "#00FF87"
+        primaryColor: "#f0f0f0",
+        primaryTextColor: "#111",
+        primaryBorderColor: "#ddd",
+        lineColor: "#555",
+        background: "#fff",
+        mainBkg: "#f9fafb",
+        nodeBorder: "#ddd",
+        clusterBkg: "#f9fafb",
+        titleColor: "#111",
+        edgeLabelBackground: "#fff",
       },
       flowchart: { curve: "basis", padding: 20 },
-      fontSize: 14
+      fontSize: 13,
     });
   }
   return mermaidLib;
@@ -52,192 +52,186 @@ async function getMarked() {
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#000;--surf:#0A0A0A;--surf2:#111;--surf3:#161616;--border:rgba(0,255,135,0.15);--green:#00FF87;--green2:#00CC6A;--text:#E0FFE8;--muted:#3A7A50;--muted2:#4A9060;--r:8px}
-  body{background:var(--bg);font-family:'Space Mono',monospace;color:var(--text);min-height:100vh}
+  :root{
+    --bg:#f5f5f5;
+    --surf:#ffffff;
+    --surf2:#f9fafb;
+    --surf3:#f3f4f6;
+    --border:#ebebeb;
+    --border2:#e0e0e0;
+    --ink:#111111;
+    --ink2:#444444;
+    --muted:#9ca3af;
+    --muted2:#6b7280;
+    --r:10px;
+  }
+
+  body{background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink);min-height:100vh}
   .app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-  /* ── Header ── */
-  .hdr{background:var(--surf);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;box-shadow:0 4px 20px rgba(0,255,135,0.05)}
-  .hdr-title h1{font-size:17px;letter-spacing:3px;text-transform:uppercase;color:var(--green);text-shadow:0 0 20px rgba(0,255,135,0.4)}
-  .hdr-title p{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:1px}
+  .hdr{background:var(--surf);border-bottom:1px solid var(--border);padding:11px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:200;}
+  .hdr-title h1{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-0.3px}
+  .hdr-title p{font-size:10px;color:var(--muted);margin-top:1px;font-weight:400}
   .hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-  .badge{background:var(--green);color:#000;border-radius:4px;padding:2px 9px;font-size:11px;font-weight:700;font-family:'Space Mono',monospace}
+  .badge{background:var(--ink);color:#fff;border-radius:5px;padding:3px 10px;font-size:10px;font-weight:600;letter-spacing:0.3px;}
 
-  /* ── Layout ── */
   .layout{display:flex;flex:1;min-height:0;overflow:hidden}
 
-  /* ── Sidenav ── */
-  .sidenav{width:220px;background:var(--surf);border-right:1px solid var(--border);padding:20px 10px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;flex-shrink:0}
-  .sidenav-section{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;padding:14px 12px 5px;font-weight:700}
-  .sidenav-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;background:none;border:none;color:var(--muted2);cursor:pointer;font-size:11px;font-family:'Space Mono',monospace;width:100%;text-align:left;transition:all .2s;border-left:2px solid transparent}
-  .sidenav-btn:hover{background:var(--surf2);color:var(--text);border-left-color:var(--green);padding-left:10px}
-  .sidenav-btn.active{background:rgba(0,255,135,.07);color:var(--green);font-weight:700;border-left-color:var(--green)}
-  .sidenav-btn .sicon{font-size:14px;width:20px;text-align:center}
-  .sidenav-info{background:var(--surf2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-top:auto}
-  .info-row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px;color:var(--muted2)}
-  .info-val{color:var(--green);font-weight:700}
+  .sidenav{width:210px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+  .sidenav-section{font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;padding:12px 10px 5px;}
+  .sidenav-btn{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:7px;background:none;border:none;color:var(--muted2);cursor:pointer;font-size:12px;font-weight:500;font-family:'Plus Jakarta Sans',sans-serif;width:100%;text-align:left;transition:all .15s;}
+  .sidenav-btn:hover{background:var(--surf2);color:var(--ink)}
+  .sidenav-btn.active{background:var(--surf3);color:var(--ink);font-weight:600}
+  .sidenav-btn .sicon{font-size:13px;width:18px;text-align:center;opacity:0.5}
+  .sidenav-btn.active .sicon{opacity:1}
+  .sidenav-info{background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:auto;}
+  .info-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;color:var(--muted2)}
+  .info-val{color:var(--ink);font-weight:600}
 
-  /* ── Main ── */
   .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+  .workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden}
 
-  /* ── Workspace ── */
-  .workspace{flex:1;display:flex;gap:14px;padding:14px;min-height:0;overflow:hidden}
+  .panel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;}
+  .panel-hdr{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surf);}
+  .panel-hdr h3{font-size:11px;font-weight:600;color:var(--ink);letter-spacing:0.1px}
+  .panel-label{font-size:9px;font-weight:600;color:var(--muted);padding:6px 12px;border-bottom:1px solid var(--border);background:var(--surf2);flex-shrink:0;letter-spacing:0.3px;}
 
-  /* ── Panel ── */
-  .panel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden}
-  .panel-hdr{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surf2)}
-  .panel-hdr h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--green)}
-  .panel-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted2);padding:7px 12px;border-bottom:1px solid var(--border);background:var(--surf2);flex-shrink:0}
+  .type-toggle{display:flex;background:var(--surf3);border-radius:6px;padding:3px;gap:2px}
+  .type-toggle button{padding:4px 12px;border:none;border-radius:5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:500;background:transparent;color:var(--muted);transition:all .15s;}
+  .type-toggle button.on{background:var(--surf);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+  .type-toggle button:hover:not(.on){color:var(--ink2)}
 
-  /* ── Type toggle ── */
-  .type-toggle{display:flex;background:rgba(0,255,135,0.05);border:1px solid var(--border);border-radius:5px;padding:3px;gap:2px}
-  .type-toggle button{padding:5px 13px;border:none;border-radius:4px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;background:transparent;color:var(--muted2);transition:all .18s;letter-spacing:0.5px}
-  .type-toggle button.on{background:var(--green);color:#000}
-  .type-toggle button:hover:not(.on){background:rgba(0,255,135,0.08);color:var(--green)}
-
-  /* ── Upload panel ── */
-  .upload-panel{width:300px;flex-shrink:0}
-  .drop-zone{flex:1;display:flex;align-items:center;justify-content:center;border:1px dashed rgba(0,255,135,0.25);border-radius:6px;margin:12px;cursor:pointer;transition:all .2s;background:rgba(0,255,135,0.02)}
-  .drop-zone:hover,.drop-zone.drag{border-color:var(--green);background:rgba(0,255,135,0.05)}
-  .drop-inner{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:24px}
-  .drop-icon{font-size:2rem;opacity:0.7}
-  .drop-zone p{font-size:11px;color:var(--muted2)}
-  .drop-zone .hint{font-size:10px;color:var(--muted);margin-top:2px}
+  .upload-panel{width:290px;flex-shrink:0}
+  .drop-zone{flex:1;display:flex;align-items:center;justify-content:center;border:1.5px dashed var(--border2);border-radius:8px;margin:12px;cursor:pointer;transition:all .2s;background:var(--surf2);}
+  .drop-zone:hover,.drop-zone.drag{border-color:#aaa;background:var(--surf3)}
+  .drop-inner{display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;padding:24px}
+  .drop-icon{font-size:1.6rem;opacity:0.15}
+  .drop-zone p{font-size:12px;color:var(--muted2)}
+  .drop-zone .hint{font-size:10px;color:var(--muted);margin-top:1px}
   .img-preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;align-items:flex-start;justify-content:center}
-  .img-preview{max-width:100%;border-radius:6px;border:1px solid var(--border)}
+  .img-preview{max-width:100%;border-radius:8px;border:1px solid var(--border)}
 
-  /* ── Buttons ── */
-  .btn-primary{background:var(--green);color:#000;border:none;padding:11px 16px;border-radius:6px;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;transition:all .18s;width:calc(100% - 24px);margin:0 12px 12px;flex-shrink:0;letter-spacing:0.5px;display:flex;align-items:center;justify-content:center;gap:8px}
-  .btn-primary:hover:not(:disabled){background:var(--green2)}
-  .btn-primary:disabled{opacity:.45;cursor:not-allowed}
-  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted2);padding:6px 12px;border-radius:5px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;cursor:pointer;transition:all .18s}
-  .btn-ghost:hover{border-color:var(--green);color:var(--green)}
-  .btn-text{background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .18s;font-family:'Space Mono',monospace}
-  .btn-text:hover{color:#EF4444;background:rgba(239,68,68,0.08)}
-  .btn-dl{background:transparent;border:1px solid var(--border);color:var(--muted2);padding:4px 11px;border-radius:4px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;cursor:pointer;transition:all .18s;letter-spacing:0.3px}
-  .btn-dl:hover{background:var(--green);color:#000;border-color:var(--green)}
+  .btn-primary{background:var(--ink);color:#fff;border:none;padding:10px 16px;border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;width:calc(100% - 24px);margin:0 12px 12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn-primary:hover:not(:disabled){background:#333}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed}
+  .btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted2);padding:6px 12px;border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;}
+  .btn-ghost:hover{border-color:#999;color:var(--ink)}
+  .btn-text{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px 7px;border-radius:5px;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif;}
+  .btn-text:hover{color:#ef4444;background:#fef2f2}
+  .btn-dl{background:var(--surf2);border:1px solid var(--border2);color:var(--ink2);padding:4px 11px;border-radius:5px;font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:600;cursor:pointer;transition:all .15s;}
+  .btn-dl:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
   .dl-bar{display:flex;gap:5px}
 
-  /* ── Code + preview ── */
   .result-body{flex:1;display:flex;min-height:0;overflow:hidden}
   .edit-col{width:42%;border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
   .preview-col{flex:1;display:flex;flex-direction:column;min-height:0}
-  .code-area{flex:1;width:100%;border:none;outline:none;resize:none;padding:13px;font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;color:#6ACA8A;background:#050505;overflow:auto;white-space:pre;min-height:0}
-  .code-area.notes{white-space:pre-wrap;word-wrap:break-word}
-  .preview-scroll{flex:1;overflow:auto;padding:14px;min-height:0;background:#050505}
+  .code-area{flex:1;width:100%;border:none;outline:none;resize:none;padding:13px;font-family:'Courier New',monospace;font-size:11px;line-height:1.7;color:#374151;background:#fafafa;overflow:auto;white-space:pre;min-height:0;}
+  .code-area.notes{white-space:pre-wrap;word-wrap:break-word;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px}
+  .preview-scroll{flex:1;overflow:auto;padding:16px;min-height:0;background:#fff}
   .preview-scroll::-webkit-scrollbar,.code-area::-webkit-scrollbar,.img-preview-wrap::-webkit-scrollbar{width:4px;height:4px}
-  .preview-scroll::-webkit-scrollbar-thumb,.code-area::-webkit-scrollbar-thumb,.img-preview-wrap::-webkit-scrollbar-thumb{background:rgba(0,255,135,0.2);border-radius:2px}
+  .preview-scroll::-webkit-scrollbar-thumb,.code-area::-webkit-scrollbar-thumb,.img-preview-wrap::-webkit-scrollbar-thumb{background:#e0e0e0;border-radius:2px}
 
-  /* ── Mermaid ── */
   .mermaid-out{overflow-x:auto}
-  .mermaid-out svg{max-width:100%;height:auto;border-radius:5px}
-  .mermaid-err{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);color:#EF4444;padding:10px 13px;border-radius:6px;font-size:11px}
+  .mermaid-out svg{max-width:100%;height:auto;border-radius:6px}
+  .mermaid-err{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:10px 13px;border-radius:7px;font-size:11px}
 
-  /* ── Notes markdown ── */
-  .md-out{font-size:11px;line-height:1.75;color:#6ACA8A}
-  .md-out h1{font-size:14px;margin-bottom:10px;color:var(--green);border-bottom:1px solid var(--border);padding-bottom:7px;letter-spacing:1px;text-transform:uppercase}
-  .md-out h2{font-size:12px;margin:14px 0 7px;color:var(--green);letter-spacing:0.5px}
-  .md-out h3{font-size:11px;margin:11px 0 5px;color:var(--muted2)}
-  .md-out p{margin-bottom:8px}
-  .md-out ul,.md-out ol{margin:6px 0 6px 18px}
+  .md-out{font-size:13px;line-height:1.8;color:#374151}
+  .md-out h1{font-size:18px;font-weight:700;margin-bottom:12px;color:#111;border-bottom:1px solid var(--border);padding-bottom:8px}
+  .md-out h2{font-size:15px;font-weight:600;margin:16px 0 8px;color:#222}
+  .md-out h3{font-size:13px;font-weight:600;margin:12px 0 5px;color:#333}
+  .md-out p{margin-bottom:9px}
+  .md-out ul,.md-out ol{margin:6px 0 6px 20px}
   .md-out li{margin-bottom:3px}
-  .md-out strong{font-weight:700;color:var(--text)}
-  .md-out code{background:var(--surf2);padding:1px 5px;border-radius:3px;font-family:'Space Mono',monospace;font-size:0.9em;color:var(--green)}
-  .md-out blockquote{border-left:2px solid var(--green);padding-left:10px;color:var(--muted2);margin:8px 0}
-  .md-out hr{border:none;border-top:1px solid var(--border);margin:12px 0}
+  .md-out strong{font-weight:700;color:#111}
+  .md-out code{background:var(--surf3);padding:1px 5px;border-radius:4px;font-family:'Courier New',monospace;font-size:0.9em;color:#374151}
+  .md-out blockquote{border-left:3px solid #ddd;padding-left:12px;color:var(--muted2);margin:10px 0}
+  .md-out hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 
-  /* ── States ── */
-  .empty-state{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--muted2);font-size:11px;text-align:center;padding:32px}
-  .empty-icon{font-size:2rem;opacity:0.25;margin-bottom:4px}
-  .loading{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--muted2);font-size:11px}
-  .spinner{width:30px;height:30px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .75s linear infinite}
-  .spin{width:14px;height:14px;border:2px solid transparent;border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+  .empty-state{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:9px;color:var(--muted);font-size:12px;text-align:center;padding:32px}
+  .empty-icon{font-size:2rem;opacity:0.1;margin-bottom:4px}
+  .loading{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--muted2);font-size:12px}
+  .spinner{width:28px;height:28px;border:2px solid var(--border2);border-top-color:var(--ink);border-radius:50%;animation:spin .75s linear infinite}
+  .spin{width:13px;height:13px;border:2px solid transparent;border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .error-box{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);color:#EF4444;padding:10px 13px;border-radius:6px;font-size:10px;margin:10px;flex-shrink:0}
+  .error-box{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:10px 13px;border-radius:7px;font-size:11px;margin:10px;flex-shrink:0}
 
-  /* ── Loading bar ── */
-  .loading-bar{height:2px;background:linear-gradient(90deg,var(--green),transparent,var(--green));background-size:200%;animation:lbar 1.2s linear infinite;flex-shrink:0}
+  .loading-bar{height:2px;background:linear-gradient(90deg,#111,#ccc,#111);background-size:200%;animation:lbar 1.2s linear infinite;flex-shrink:0}
   @keyframes lbar{from{background-position:200%}to{background-position:-200%}}
 
-  /* ── Doc Creator ── */
-  .doc-workspace{flex:1;display:flex;gap:14px;padding:14px;min-height:0;overflow:hidden}
-  .doc-input-col{width:320px;flex-shrink:0;display:flex;flex-direction:column;min-height:0}
+  .doc-workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden}
+  .doc-input-col{width:310px;flex-shrink:0;display:flex;flex-direction:column;min-height:0}
   .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:4px}
   .doc-cards-scroll::-webkit-scrollbar{width:4px}
-  .doc-cards-scroll::-webkit-scrollbar-thumb{background:rgba(0,255,135,0.15);border-radius:2px}
+  .doc-cards-scroll::-webkit-scrollbar-thumb{background:#e0e0e0;border-radius:2px}
   .doc-gen-btn-wrap{flex-shrink:0;padding-top:10px}
   .doc-output-col{flex:1;min-width:0;display:flex;flex-direction:column}
 
-  /* ── Input cards ── */
   .input-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
   .input-card-hdr{padding:9px 13px;background:var(--surf2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-  .input-card-hdr h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--green);display:flex;align-items:center;gap:7px}
-  .card-tag{background:rgba(0,255,135,0.1);color:var(--green);border:1px solid rgba(0,255,135,0.2);font-size:8px;font-weight:700;padding:1px 7px;border-radius:3px;letter-spacing:0.5px;text-transform:uppercase}
-  .card-tag.opt{background:transparent;color:var(--muted);border-color:var(--border)}
-  .prompt-area{width:100%;border:none;outline:none;resize:vertical;padding:11px 13px;font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;color:#6ACA8A;background:#050505;min-height:90px}
-  .prompt-area::placeholder{color:var(--muted);opacity:0.6;font-size:10px}
+  .input-card-hdr h4{font-size:11px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px}
+  .card-tag{background:transparent;color:var(--muted);border:1px solid var(--border);font-size:9px;font-weight:600;padding:1px 7px;border-radius:3px;letter-spacing:0.3px}
+  .prompt-area{width:100%;border:none;outline:none;resize:vertical;padding:11px 13px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;line-height:1.65;color:#374151;background:#fff;min-height:90px;}
+  .prompt-area::placeholder{color:var(--muted);font-size:11px}
   .ctx-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:11px 13px}
-  .field-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:4px}
-  .field-input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:5px;padding:7px 10px;font-family:'Space Mono',monospace;font-size:11px;color:var(--text);outline:none}
-  .field-input:focus{border-color:var(--green)}
+  .field-label{font-size:10px;font-weight:600;color:var(--muted2);margin-bottom:4px;letter-spacing:0.2px}
+  .field-input{width:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:var(--ink);outline:none;transition:border-color .15s;}
+  .field-input:focus{border-color:#999}
   .field-full{padding:0 13px 11px;display:flex;flex-direction:column}
 
-  /* ── Client doc output ── */
-  .doc-preview{flex:1;overflow-y:auto;padding:18px 22px;background:#050505}
+  .doc-preview{flex:1;overflow-y:auto;padding:20px 24px;background:#f9fafb}
   .doc-preview::-webkit-scrollbar{width:4px}
-  .doc-preview::-webkit-scrollbar-thumb{background:rgba(0,255,135,0.15);border-radius:2px}
-  .client-doc{max-width:820px;margin:0 auto;font-family:'Space Mono',monospace;color:var(--text)}
-  .client-doc .doc-hero{background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:24px 28px;margin-bottom:16px;position:relative;overflow:hidden}
-  .client-doc .doc-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),transparent)}
-  .client-doc .doc-hero .d-eyebrow{font-size:8px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--green);margin-bottom:8px}
-  .client-doc .doc-hero h1{font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:5px;text-shadow:0 0 20px rgba(0,255,135,0.3)}
-  .client-doc .doc-hero .d-sub{font-size:10px;color:var(--muted2)}
+  .doc-preview::-webkit-scrollbar-thumb{background:#e0e0e0;border-radius:2px}
+
+  .client-doc{max-width:820px;margin:0 auto;font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink)}
+  .client-doc .doc-hero{background:#111;color:#fff;border-radius:10px;padding:24px 28px;margin-bottom:16px;}
+  .client-doc .doc-hero .d-eyebrow{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:8px}
+  .client-doc .doc-hero h1{font-size:20px;font-weight:700;color:#fff;margin-bottom:4px;letter-spacing:-0.3px}
+  .client-doc .doc-hero .d-sub{font-size:11px;color:#666}
   .client-doc .doc-hero .d-meta{display:flex;gap:20px;margin-top:16px;flex-wrap:wrap}
-  .client-doc .doc-hero .d-meta-item .d-label{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
-  .client-doc .doc-hero .d-meta-item .d-val{font-size:11px;color:var(--text)}
-  .client-doc .doc-section{background:var(--surf);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
+  .client-doc .doc-hero .d-meta-item .d-label{font-size:9px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:#555;margin-bottom:3px}
+  .client-doc .doc-hero .d-meta-item .d-val{font-size:12px;color:#ccc}
+  .client-doc .doc-section{background:#fff;border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden}
   .client-doc .sec-hdr{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--surf2);border-bottom:1px solid var(--border)}
-  .client-doc .sec-num{background:var(--green);color:#000;width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
-  .client-doc .sec-hdr h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--green)}
+  .client-doc .sec-num{background:#111;color:#fff;width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+  .client-doc .sec-hdr h2{font-size:12px;font-weight:700;color:var(--ink)}
   .client-doc .sec-body{padding:16px}
-  .client-doc .stage-card{border:1px solid var(--border);border-radius:6px;margin-bottom:11px;overflow:hidden}
-  .client-doc .stage-hdr{display:flex;align-items:center;gap:10px;padding:9px 13px;background:rgba(0,255,135,0.08);border-bottom:1px solid var(--border)}
-  .client-doc .stage-label{font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2)}
-  .client-doc .stage-name{font-size:11px;font-weight:700;color:var(--green)}
+  .client-doc .stage-card{border:1px solid var(--border);border-radius:8px;margin-bottom:11px;overflow:hidden}
+  .client-doc .stage-hdr{display:flex;align-items:center;gap:10px;padding:9px 13px;background:var(--surf3);border-bottom:1px solid var(--border)}
+  .client-doc .stage-label{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+  .client-doc .stage-name{font-size:12px;font-weight:700;color:var(--ink)}
   .client-doc .stage-body{padding:13px;display:grid;grid-template-columns:1fr 1fr;gap:13px}
-  .client-doc .stage-col h4{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:7px}
-  .client-doc .script-bubble{background:var(--surf2);border-left:2px solid var(--green);padding:8px 11px;font-size:10px;line-height:1.65;color:#6ACA8A;margin-bottom:6px;border-radius:0 4px 4px 0}
-  .client-doc .outcome-chip{display:inline-flex;align-items:center;background:rgba(0,255,135,0.08);border:1px solid rgba(0,255,135,0.2);color:var(--green);font-size:9px;font-weight:700;padding:3px 8px;border-radius:3px;margin:2px 2px 2px 0;letter-spacing:0.3px}
-  .client-doc .outcome-chip.red{background:rgba(239,68,68,0.07);border-color:rgba(239,68,68,0.2);color:#EF4444}
-  .client-doc .outcome-chip.yellow{background:rgba(249,115,22,0.07);border-color:rgba(249,115,22,0.2);color:#F97316}
+  .client-doc .stage-col h4{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:8px}
+  .client-doc .script-bubble{background:var(--surf2);border-left:3px solid #ddd;padding:8px 12px;font-size:12px;line-height:1.65;color:#374151;margin-bottom:6px;border-radius:0 6px 6px 0}
+  .client-doc .outcome-chip{display:inline-flex;align-items:center;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;margin:2px 2px 2px 0}
+  .client-doc .outcome-chip.red{background:#fef2f2;border-color:#fecaca;color:#dc2626}
+  .client-doc .outcome-chip.yellow{background:#fffbeb;border-color:#fde68a;color:#92400e}
   .client-doc .eval-table{width:100%;border-collapse:collapse}
-  .client-doc .eval-table th{background:var(--surf2);padding:9px 13px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--green);text-align:left;border-bottom:1px solid var(--border)}
-  .client-doc .eval-table td{padding:9px 13px;font-size:10px;border-bottom:1px solid rgba(0,255,135,0.06);color:#6ACA8A;vertical-align:top}
+  .client-doc .eval-table th{background:var(--surf3);padding:9px 13px;font-size:10px;font-weight:600;color:var(--ink);text-align:left;border-bottom:1px solid var(--border2)}
+  .client-doc .eval-table td{padding:9px 13px;font-size:12px;border-bottom:1px solid var(--border);color:#374151;vertical-align:top}
   .client-doc .eval-table tr:last-child td{border-bottom:none}
-  .client-doc .eval-table tr:hover td{background:rgba(0,255,135,0.03)}
-  .client-doc .score-pill{display:inline-block;font-weight:700;font-size:9px;padding:2px 8px;border-radius:3px;letter-spacing:0.3px}
-  .client-doc .score-pill.high{background:rgba(0,255,135,0.12);color:var(--green);border:1px solid rgba(0,255,135,0.25)}
-  .client-doc .score-pill.med{background:rgba(249,115,22,0.1);color:#F97316;border:1px solid rgba(249,115,22,0.25)}
-  .client-doc .score-pill.low{background:rgba(239,68,68,0.1);color:#EF4444;border:1px solid rgba(239,68,68,0.25)}
+  .client-doc .eval-table tr:hover td{background:var(--surf2)}
+  .client-doc .score-pill{display:inline-block;font-weight:700;font-size:10px;padding:2px 9px;border-radius:4px}
+  .client-doc .score-pill.high{background:#dcfce7;color:#166534}
+  .client-doc .score-pill.med{background:#fef9c3;color:#854d0e}
+  .client-doc .score-pill.low{background:#fee2e2;color:#991b1b}
   .client-doc .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .client-doc .info-item{background:var(--surf2);border:1px solid var(--border);border-radius:5px;padding:11px 13px}
-  .client-doc .i-label{font-size:8px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
-  .client-doc .i-val{font-size:10px;color:#6ACA8A;line-height:1.6}
-  .client-doc .flow-vis{display:flex;align-items:center;gap:0;flex-wrap:wrap;padding:12px 0;margin-bottom:14px}
-  .client-doc .flow-node{background:rgba(0,255,135,0.08);border:1px solid rgba(0,255,135,0.3);color:var(--green);font-size:9px;font-weight:700;padding:6px 13px;border-radius:3px;letter-spacing:0.5px;text-transform:uppercase}
-  .client-doc .flow-node.end-node{background:rgba(0,255,135,0.15);border-color:var(--green)}
-  .client-doc .flow-arr{color:var(--muted);font-size:14px;margin:0 4px}
+  .client-doc .info-item{background:var(--surf2);border:1px solid var(--border);border-radius:7px;padding:12px 14px}
+  .client-doc .i-label{font-size:9px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+  .client-doc .i-val{font-size:12px;color:#374151;line-height:1.6}
+  .client-doc .flow-vis{display:flex;align-items:center;flex-wrap:wrap;padding:10px 0;margin-bottom:14px;gap:2px}
+  .client-doc .flow-node{background:var(--surf3);border:1px solid var(--border2);color:var(--ink);font-size:10px;font-weight:600;padding:6px 14px;border-radius:4px}
+  .client-doc .flow-node.end-node{background:#111;color:#fff;border-color:#111}
+  .client-doc .flow-arr{color:var(--muted);font-size:14px;margin:0 3px}
 
-  /* ── Toast ── */
-  .toast{position:fixed;top:68px;left:50%;transform:translateX(-50%);background:var(--surf);border:1px solid var(--border);border-radius:5px;padding:9px 18px;font-size:11px;font-weight:700;z-index:1000;white-space:nowrap;animation:tslide .2s ease;font-family:'Space Mono',monospace}
+  .toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--border2);box-shadow:0 4px 16px rgba(0,0,0,0.08);border-radius:7px;padding:9px 18px;font-size:12px;font-weight:600;z-index:1000;white-space:nowrap;animation:tslide .2s ease;font-family:'Plus Jakarta Sans',sans-serif}
   @keyframes tslide{from{opacity:0;transform:translateX(-50%) translateY(-6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-  .toast.ok{border-color:var(--green);color:var(--green)}
-  .toast.err{border-color:#EF4444;color:#EF4444}
-  .toast.info{border-color:#3B82F6;color:#3B82F6}
+  .toast.ok{border-color:#86efac;color:#166534}
+  .toast.err{border-color:#fca5a5;color:#dc2626}
+  .toast.info{border-color:#93c5fd;color:#1d4ed8}
 
-  /* ── Responsive ── */
   @media(max-width:767px){
     .sidenav{display:none!important}
     .bottom-nav{display:flex!important}
@@ -250,14 +244,12 @@ const css = `
   }
   @media(min-width:768px){.bottom-nav{display:none!important}}
 
-  /* ── Bottom nav ── */
-  .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:1px solid var(--border);padding:7px 0 13px;z-index:200}
-  .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted2);cursor:pointer;font-family:'Space Mono',monospace;font-size:9px;padding:4px 0;transition:color .2s}
-  .bnav-btn.active{color:var(--green)}
-  .bnav-icon{font-size:16px;line-height:1}
+  .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);padding:8px 0 14px;z-index:200}
+  .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;padding:4px 0;transition:color .2s;font-weight:500}
+  .bnav-btn.active{color:var(--ink);font-weight:600}
+  .bnav-icon{font-size:15px;line-height:1}
 `;
 
-// ── Toast hook ────────────────────────────────────────────────────────────────
 function useToast() {
   const [toast, setToast] = useState(null);
   const show = useCallback((msg, type = "ok") => {
@@ -269,17 +261,17 @@ function useToast() {
 
 // ── Section 1: Image → Structure ──────────────────────────────────────────────
 const ImageSection = memo(({ showToast }) => {
-  const [image, setImage]           = useState(null);
-  const [imgPrev, setImgPrev]       = useState(null);
-  const [mode, setMode]             = useState("flowchart");
+  const [image, setImage]             = useState(null);
+  const [imgPrev, setImgPrev]         = useState(null);
+  const [mode, setMode]               = useState("flowchart");
   const [editContent, setEditContent] = useState("");
-  const [svg, setSvg]               = useState("");
-  const [svgErr, setSvgErr]         = useState("");
-  const [mdHtml, setMdHtml]         = useState("");
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState("");
-  const [drag, setDrag]             = useState(false);
-  const [hasResult, setHasResult]   = useState(false);
+  const [svg, setSvg]                 = useState("");
+  const [svgErr, setSvgErr]           = useState("");
+  const [mdHtml, setMdHtml]           = useState("");
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState("");
+  const [drag, setDrag]               = useState(false);
+  const [hasResult, setHasResult]     = useState(false);
 
   const fileRef = useRef(), camRef = useRef(), timerRef = useRef();
 
@@ -309,8 +301,7 @@ const ImageSection = memo(({ showToast }) => {
 
   const loadFile = (file) => {
     if (!file || !file.type.startsWith("image/")) { setError("Please upload a valid image."); return; }
-    setImage(file);
-    setImgPrev(URL.createObjectURL(file));
+    setImage(file); setImgPrev(URL.createObjectURL(file));
     setEditContent(""); setSvg(""); setSvgErr(""); setError(""); setHasResult(false); setMdHtml("");
   };
 
@@ -326,11 +317,9 @@ const ImageSection = memo(({ showToast }) => {
       const formData = new FormData();
       formData.append("image", image);
       formData.append("type", mode);
-
       const res = await fetch(`${BACKEND_URL}/api/analyze`, { method: "POST", body: formData });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || "Analysis failed");
-
       let content = data.content.trim();
       setEditContent(content); setHasResult(true);
       if (mode === "flowchart") renderMermaid(content);
@@ -354,15 +343,14 @@ const ImageSection = memo(({ showToast }) => {
 
   const downloadDOC = () => {
     const body = mode === "flowchart"
-      ? `<h2>Flowchart</h2>${svg ? `<div>${svg}</div>` : ""}<pre style="background:#f1f5f9;padding:16px">${editContent}</pre>`
+      ? `<h2>Flowchart</h2>${svg ? `<div>${svg}</div>` : ""}<pre style="background:#f9fafb;padding:16px">${editContent}</pre>`
       : (mdHtml || editContent);
-    const html = `<html><head><meta charset="utf-8"/><style>body{font-family:Calibri,Arial,sans-serif;margin:72pt;font-size:11pt;}pre{background:#f1f5f9;padding:12pt;}ul,ol{margin-left:20pt;}</style></head><body>${body}</body></html>`;
+    const html = `<html><head><meta charset="utf-8"/><style>body{font-family:Calibri,Arial,sans-serif;margin:72pt;font-size:11pt;}pre{background:#f9fafb;padding:12pt;}ul,ol{margin-left:20pt;}</style></head><body>${body}</body></html>`;
     triggerDL(URL.createObjectURL(new Blob(["\ufeff", html], { type: "application/msword" })), `${mode}.doc`);
   };
 
   return (
     <div className="workspace">
-      {/* Upload Panel */}
       <div className="panel upload-panel">
         <div className="panel-hdr">
           <h3>Original Image</h3>
@@ -382,11 +370,11 @@ const ImageSection = memo(({ showToast }) => {
             onDragLeave={() => setDrag(false)}
             onClick={() => fileRef.current.click()}>
             <div className="drop-inner">
-              <div className="drop-icon">◈</div>
-              <p><strong style={{ color: "var(--green)" }}>Drop image here</strong></p>
+              <div className="drop-icon">⬆</div>
+              <p><strong style={{ fontWeight: 600, color: "var(--ink)" }}>Drop image here</strong></p>
               <p>or click to upload</p>
               <p className="hint">JPG · PNG · WEBP · HEIC</p>
-              <button className="btn-ghost" style={{ marginTop: 6 }} onClick={(e) => { e.stopPropagation(); camRef.current.click(); }}>◉ Camera</button>
+              <button className="btn-ghost" style={{ marginTop: 6 }} onClick={(e) => { e.stopPropagation(); camRef.current.click(); }}>Camera</button>
             </div>
             <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => loadFile(e.target.files[0])} />
             <input ref={camRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => loadFile(e.target.files[0])} />
@@ -399,12 +387,11 @@ const ImageSection = memo(({ showToast }) => {
 
         {imgPrev && (
           <button className="btn-primary" onClick={analyze} disabled={loading}>
-            {loading ? <><span className="spin" /> Analyzing…</> : `✦ Convert to ${mode === "flowchart" ? "Flowchart" : "Clean Notes"}`}
+            {loading ? <><span className="spin" /> Analyzing…</> : `Convert to ${mode === "flowchart" ? "Flowchart" : "Notes"} →`}
           </button>
         )}
       </div>
 
-      {/* Result Panel */}
       <div className="panel" style={{ flex: 1, minWidth: 0 }}>
         {loading && <div className="loading-bar" />}
         <div className="panel-hdr">
@@ -421,9 +408,9 @@ const ImageSection = memo(({ showToast }) => {
 
         {!hasResult && !loading && !error && (
           <div className="empty-state">
-            <div className="empty-icon">{mode === "flowchart" ? "◈" : "◧"}</div>
-            <p style={{ color: "var(--muted2)" }}>Upload a {mode} image and click Convert</p>
-            <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>Editable result with live preview</p>
+            <div className="empty-icon">◻</div>
+            <p>Upload a {mode} image and click Convert</p>
+            <p style={{ fontSize: 11, marginTop: 2 }}>Editable result with live preview</p>
           </div>
         )}
 
@@ -431,27 +418,27 @@ const ImageSection = memo(({ showToast }) => {
           <div className="loading">
             <div className="spinner" />
             <p>Analyzing with GPT-4o…</p>
-            <p style={{ fontSize: 10, color: "var(--muted)" }}>10–20 seconds</p>
+            <p style={{ fontSize: 11 }}>10–20 seconds</p>
           </div>
         )}
 
         {hasResult && !loading && (
           <div className="result-body">
             <div className="edit-col">
-              <div className="panel-label">{mode === "flowchart" ? "⊞ Mermaid Code — Edit to adjust" : "✎ Notes — Edit freely"}</div>
+              <div className="panel-label">{mode === "flowchart" ? "Mermaid code — edit to adjust" : "Notes — edit freely"}</div>
               <textarea className={`code-area${mode === "notes" ? " notes" : ""}`}
                 value={editContent} onChange={(e) => setEditContent(e.target.value)}
                 spellCheck={mode === "notes"} placeholder={mode === "flowchart" ? "Mermaid.js code…" : "Your notes…"} />
             </div>
             <div className="preview-col">
-              <div className="panel-label">◉ Live Preview</div>
+              <div className="panel-label">Live preview</div>
               <div className="preview-scroll">
                 {mode === "flowchart"
                   ? svgErr
                     ? <div className="mermaid-err">{svgErr}</div>
                     : svg
                       ? <div className="mermaid-out" dangerouslySetInnerHTML={{ __html: svg }} />
-                      : <div style={{ color: "var(--muted)", fontSize: 11 }}>Rendering…</div>
+                      : <div style={{ color: "var(--muted)", fontSize: 12 }}>Rendering…</div>
                   : <div className="md-out" dangerouslySetInnerHTML={{ __html: mdHtml }} />}
               </div>
             </div>
@@ -478,17 +465,10 @@ const DocCreator = memo(({ showToast }) => {
       const res = await fetch(`${BACKEND_URL}/api/generate-doc`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scriptPrompt,
-          evalPrompt,
-          client:  ctx.client,
-          product: ctx.product,
-          version: ctx.version,
-        }),
+        body: JSON.stringify({ scriptPrompt, evalPrompt, client: ctx.client, product: ctx.product, version: ctx.version }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || "Generation failed");
-
       setDocHtml(data.content);
       showToast("Document generated ✓", "ok");
     } catch (e) {
@@ -499,46 +479,7 @@ const DocCreator = memo(({ showToast }) => {
 
   const downloadDOC = () => {
     if (!docHtml) return;
-    const styles = `
-      body{font-family:Calibri,Arial,sans-serif;margin:48pt;font-size:11pt;color:#1a2332;background:#fff}
-      .doc-hero{background:#0d1b2a;color:#fff;padding:20pt;border-radius:4pt;margin-bottom:14pt}
-      .d-eyebrow{font-size:8pt;letter-spacing:2px;text-transform:uppercase;color:#00FF87;margin-bottom:6pt}
-      h1{font-size:16pt;color:#00FF87;margin-bottom:4pt}
-      .d-sub{font-size:9pt;color:#94a3b8}
-      .d-meta{display:flex;gap:16pt;margin-top:12pt}
-      .d-label{font-size:7pt;text-transform:uppercase;color:#64748b}
-      .d-val{font-size:9pt;color:#e2e8f0}
-      .doc-section{border:1pt solid #e4e9f0;border-radius:4pt;margin-bottom:12pt}
-      .sec-hdr{background:#f8fafc;padding:9pt 13pt;border-bottom:1pt solid #e4e9f0;display:flex;align-items:center;gap:8pt}
-      .sec-num{background:#0d1b2a;color:#fff;display:inline-block;padding:2pt 6pt;border-radius:3pt;font-size:8pt;font-weight:bold;margin-right:6pt}
-      .sec-hdr h2{font-size:11pt;font-weight:bold;margin:0;text-transform:uppercase;letter-spacing:1px}
-      .sec-body{padding:13pt}
-      .stage-card{border:1pt solid #e4e9f0;border-radius:4pt;margin-bottom:9pt}
-      .stage-hdr{background:#eff6ff;padding:8pt 12pt;border-bottom:1pt solid #e4e9f0}
-      .stage-label{font-size:7pt;text-transform:uppercase;color:#64748b;letter-spacing:1px}
-      .stage-name{font-size:10pt;font-weight:bold;color:#1d4ed8;display:block}
-      .stage-body{padding:10pt}
-      .stage-col{display:inline-block;vertical-align:top;width:48%;padding-right:8pt}
-      .stage-col h4{font-size:7pt;font-weight:bold;text-transform:uppercase;color:#64748b;margin-bottom:5pt}
-      .script-bubble{background:#f8fafc;border-left:2pt solid #0ea5e9;padding:6pt 9pt;font-size:9pt;line-height:1.6;margin-bottom:5pt}
-      .eval-table{border-collapse:collapse;width:100%}
-      .eval-table th{background:#0d1b2a;color:#fff;padding:7pt 10pt;font-size:8pt;font-weight:bold;text-align:left;border-bottom:1pt solid #e4e9f0}
-      .eval-table td{padding:7pt 10pt;font-size:9pt;border-bottom:0.5pt solid #e4e9f0;vertical-align:top}
-      .info-grid{display:table;width:100%}
-      .info-item{display:table-cell;width:50%;padding-right:10pt;vertical-align:top}
-      .i-label{font-size:7pt;font-weight:bold;text-transform:uppercase;color:#64748b;margin-bottom:3pt}
-      .i-val{font-size:9pt;line-height:1.5}
-      .flow-vis{margin-bottom:12pt}
-      .flow-node{display:inline-block;background:#eff6ff;border:1pt solid #bfdbfe;color:#1d4ed8;font-size:8pt;padding:3pt 9pt;border-radius:3pt;margin:2pt}
-      .flow-arr{display:inline-block;color:#94a3b8;margin:0 2pt}
-      .outcome-chip{display:inline-block;border:0.5pt solid #bbf7d0;background:#f0fdf4;color:#15803d;font-size:8pt;padding:2pt 6pt;border-radius:3pt;margin:2pt}
-      .outcome-chip.red{background:#fef2f2;border-color:#fecaca;color:#dc2626}
-      .outcome-chip.yellow{background:#fffbeb;border-color:#fde68a;color:#b45309}
-      .score-pill{display:inline-block;font-weight:bold;font-size:8pt;padding:1pt 6pt;border-radius:3pt}
-      .score-pill.high{background:#dcfce7;color:#166534}
-      .score-pill.med{background:#fef9c3;color:#854d0e}
-      .score-pill.low{background:#fee2e2;color:#991b1b}
-    `;
+    const styles = `body{font-family:Calibri,Arial,sans-serif;margin:48pt;font-size:11pt;color:#1a1a1a;background:#fff}.doc-hero{background:#111;color:#fff;padding:20pt;border-radius:4pt;margin-bottom:14pt}.d-eyebrow{font-size:8pt;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:6pt}h1{font-size:18pt;color:#fff;margin-bottom:4pt}.d-sub{font-size:9pt;color:#666}.d-meta{display:flex;gap:16pt;margin-top:12pt}.d-label{font-size:7pt;text-transform:uppercase;color:#555}.d-val{font-size:9pt;color:#ccc}.doc-section{border:1pt solid #ebebeb;border-radius:4pt;margin-bottom:12pt}.sec-hdr{background:#f9fafb;padding:9pt 13pt;border-bottom:1pt solid #ebebeb;display:flex;align-items:center;gap:8pt}.sec-num{background:#111;color:#fff;display:inline-block;padding:2pt 6pt;border-radius:3pt;font-size:8pt;font-weight:bold;margin-right:6pt}.sec-hdr h2{font-size:11pt;font-weight:bold;margin:0}.sec-body{padding:13pt}.stage-card{border:1pt solid #ebebeb;border-radius:4pt;margin-bottom:9pt}.stage-hdr{background:#f3f4f6;padding:8pt 12pt;border-bottom:1pt solid #ebebeb}.stage-label{font-size:7pt;text-transform:uppercase;color:#9ca3af;letter-spacing:1px}.stage-name{font-size:10pt;font-weight:bold;color:#111;display:block}.stage-body{padding:10pt}.stage-col{display:inline-block;vertical-align:top;width:48%;padding-right:8pt}.stage-col h4{font-size:7pt;font-weight:bold;text-transform:uppercase;color:#9ca3af;margin-bottom:5pt}.script-bubble{background:#f9fafb;border-left:3pt solid #ddd;padding:6pt 9pt;font-size:9pt;line-height:1.6;margin-bottom:5pt}.eval-table{border-collapse:collapse;width:100%}.eval-table th{background:#f3f4f6;color:#111;padding:7pt 10pt;font-size:8pt;font-weight:bold;text-align:left;border-bottom:1pt solid #ebebeb}.eval-table td{padding:7pt 10pt;font-size:9pt;border-bottom:0.5pt solid #ebebeb;vertical-align:top}.info-grid{display:table;width:100%}.info-item{display:table-cell;width:50%;padding-right:10pt;vertical-align:top}.i-label{font-size:7pt;font-weight:bold;text-transform:uppercase;color:#9ca3af;margin-bottom:3pt}.i-val{font-size:9pt;line-height:1.5}.flow-vis{margin-bottom:12pt}.flow-node{display:inline-block;background:#f3f4f6;border:1pt solid #e0e0e0;color:#111;font-size:8pt;padding:3pt 9pt;border-radius:3pt;margin:2pt}.flow-arr{display:inline-block;color:#9ca3af;margin:0 2pt}.outcome-chip{display:inline-block;border:0.5pt solid #bbf7d0;background:#f0fdf4;color:#166534;font-size:8pt;padding:2pt 6pt;border-radius:3pt;margin:2pt}.outcome-chip.red{background:#fef2f2;border-color:#fecaca;color:#dc2626}.outcome-chip.yellow{background:#fffbeb;border-color:#fde68a;color:#92400e}.score-pill{display:inline-block;font-weight:bold;font-size:8pt;padding:1pt 6pt;border-radius:3pt}.score-pill.high{background:#dcfce7;color:#166534}.score-pill.med{background:#fef9c3;color:#854d0e}.score-pill.low{background:#fee2e2;color:#991b1b}`;
     const full = `<html><head><meta charset="utf-8"/><style>${styles}</style></head><body>${docHtml}</body></html>`;
     const blob = new Blob(["\ufeff", full], { type: "application/msword" });
     const a = document.createElement("a");
@@ -548,15 +489,11 @@ const DocCreator = memo(({ showToast }) => {
 
   return (
     <div className="doc-workspace">
-      {/* Inputs */}
       <div className="doc-input-col">
-
-        {/* Scrollable cards */}
         <div className="doc-cards-scroll">
 
-          {/* Context */}
           <div className="input-card">
-            <div className="input-card-hdr"><h4>◈ Document Context</h4></div>
+            <div className="input-card-hdr"><h4>Document Context</h4></div>
             <div className="ctx-grid">
               <div>
                 <div className="field-label">Client Name</div>
@@ -573,22 +510,20 @@ const DocCreator = memo(({ showToast }) => {
             </div>
           </div>
 
-          {/* Script Prompt */}
           <div className="input-card">
             <div className="input-card-hdr">
-              <h4>◉ Call Script Prompt</h4>
-              <span className="card-tag opt">Optional</span>
+              <h4>Call Script Prompt</h4>
+              <span className="card-tag">Optional</span>
             </div>
             <textarea className="prompt-area" style={{ minHeight: 110 }}
               placeholder="Paste your call script prompt here..."
               value={scriptPrompt} onChange={(e) => setScriptPrompt(e.target.value)} />
           </div>
 
-          {/* Eval Prompt */}
           <div className="input-card">
             <div className="input-card-hdr">
-              <h4>▧ Evaluation Prompt</h4>
-              <span className="card-tag opt">Optional</span>
+              <h4>Evaluation Prompt</h4>
+              <span className="card-tag">Optional</span>
             </div>
             <textarea className="prompt-area" style={{ minHeight: 100 }}
               placeholder="Paste your evaluation/scoring prompt here..."
@@ -599,16 +534,13 @@ const DocCreator = memo(({ showToast }) => {
 
         </div>
 
-        {/* Button pinned at bottom */}
         <div className="doc-gen-btn-wrap">
           <button className="btn-primary" style={{ width: "100%", margin: 0 }} onClick={generate} disabled={loading}>
-            {loading ? <><span className="spin" /> Generating Document...</> : "✦ Generate Client Document"}
+            {loading ? <><span className="spin" /> Generating Document…</> : "Generate Client Document →"}
           </button>
         </div>
-
       </div>
 
-      {/* Output */}
       <div className="panel doc-output-col">
         {loading && <div className="loading-bar" />}
         <div className="panel-hdr">
@@ -620,15 +552,15 @@ const DocCreator = memo(({ showToast }) => {
           <div className="loading">
             <div className="spinner" />
             <p>GPT-4o is writing your document…</p>
-            <p style={{ fontSize: 10, color: "var(--muted)" }}>Generating stages, scripts & evaluation framework</p>
+            <p style={{ fontSize: 11, color: "var(--muted)" }}>Generating stages, scripts & evaluation framework</p>
           </div>
         )}
 
         {!docHtml && !loading && (
           <div className="empty-state">
-            <div className="empty-icon">◧</div>
-            <p style={{ color: "var(--muted2)" }}>Your client-ready document will appear here</p>
-            <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>Paste your prompts and click Generate</p>
+            <div className="empty-icon">◻</div>
+            <p>Your client-ready document will appear here</p>
+            <p style={{ fontSize: 11, marginTop: 2 }}>Paste your prompts and click Generate</p>
           </div>
         )}
 
@@ -644,12 +576,12 @@ const DocCreator = memo(({ showToast }) => {
 
 // ── Root App ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [tab, setTab]   = useState("image");
-  const [toast, show]   = useToast();
+  const [tab, setTab] = useState("image");
+  const [toast, show] = useToast();
 
   const TABS = [
-    { id: "image", label: "Image → Structure",    icon: "◈" },
-    { id: "doc",   label: "Prompt → Client Doc",  icon: "◧" },
+    { id: "image", label: "Image → Structure",   icon: "⬆" },
+    { id: "doc",   label: "Prompt → Client Doc", icon: "◻" },
   ];
 
   return (
@@ -658,11 +590,10 @@ export default function App() {
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
       <div className="app">
-        {/* Header */}
         <div className="hdr">
-          <ScribbleLogo size={34} />
+          <ScribbleLogo size={32} />
           <div className="hdr-title">
-            <h1>Scribble to Structure</h1>
+            <h1>InkParse</h1>
             <p>AI-powered · by Hunar</p>
           </div>
           <div className="hdr-right">
@@ -671,7 +602,6 @@ export default function App() {
         </div>
 
         <div className="layout">
-          {/* Sidenav */}
           <nav className="sidenav">
             <div className="sidenav-section">Tools</div>
             {TABS.map((t) => (
@@ -681,17 +611,17 @@ export default function App() {
             ))}
 
             <div className="sidenav-section">Guide</div>
-            <div style={{ padding: "8px 12px" }}>
-              <div style={{ fontSize: 9, color: "var(--muted)", lineHeight: 1.9 }}>
-                <div style={{ color: "var(--muted2)", marginBottom: 2 }}>◈ Image → Structure</div>
-                <div style={{ paddingLeft: 12, marginBottom: 10 }}>Upload a flowchart or notes photo, convert to editable Mermaid / Markdown</div>
-                <div style={{ color: "var(--muted2)", marginBottom: 2 }}>◧ Prompt → Client Doc</div>
-                <div style={{ paddingLeft: 12 }}>Paste script & eval prompts, get a detailed client-ready document</div>
+            <div style={{ padding: "4px 10px" }}>
+              <div style={{ fontSize: 11, lineHeight: 1.8, color: "var(--muted2)" }}>
+                <div style={{ fontWeight: 600, color: "var(--ink2)", marginBottom: 2 }}>Image → Structure</div>
+                <div style={{ color: "var(--muted)", marginBottom: 12, fontSize: 10 }}>Upload a flowchart or notes photo, convert to editable Mermaid / Markdown</div>
+                <div style={{ fontWeight: 600, color: "var(--ink2)", marginBottom: 2 }}>Prompt → Client Doc</div>
+                <div style={{ color: "var(--muted)", fontSize: 10 }}>Paste script & eval prompts, get a detailed client-ready document</div>
               </div>
             </div>
 
             <div className="sidenav-info">
-              <div style={{ fontSize: 9, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 700 }}>Stack</div>
+              <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>Stack</div>
               {[["Model", "GPT-4o"], ["Vision", "Enabled"], ["Output", "SVG · DOC · MD"]].map(([l, v]) => (
                 <div key={l} className="info-row">
                   <span>{l}</span>
@@ -701,14 +631,12 @@ export default function App() {
             </div>
           </nav>
 
-          {/* Main */}
           <main className="main">
             {tab === "image" && <ImageSection showToast={show} />}
             {tab === "doc"   && <DocCreator   showToast={show} />}
           </main>
         </div>
 
-        {/* Mobile bottom nav */}
         <nav className="bottom-nav">
           {TABS.map((t) => (
             <button key={t.id} className={`bnav-btn${tab === t.id ? " active" : ""}`} onClick={() => setTab(t.id)}>
