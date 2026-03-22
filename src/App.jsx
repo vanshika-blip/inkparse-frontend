@@ -78,7 +78,7 @@ const css = `
   .hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
   .badge{background:var(--ink);color:#fff;border-radius:5px;padding:3px 10px;font-size:10px;font-weight:600;letter-spacing:0.3px;}
 
-  .layout{display:flex;flex:1;min-height:0;height:0;overflow:hidden}
+  .layout{display:flex;flex:1;min-height:0;overflow:hidden}
 
   .sidenav{width:210px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
   .sidenav-section{font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;padding:12px 10px 5px;}
@@ -91,8 +91,8 @@ const css = `
   .info-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;color:var(--muted2)}
   .info-val{color:var(--ink);font-weight:600}
 
-  .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;height:0}
-  .workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden;height:0}
+  .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+  .workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden}
 
   .panel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;}
   .panel-hdr{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surf);}
@@ -161,27 +161,26 @@ const css = `
   .loading-bar{height:2px;background:linear-gradient(90deg,#111,#ccc,#111);background-size:200%;animation:lbar 1.2s linear infinite;flex-shrink:0}
   @keyframes lbar{from{background-position:200%}to{background-position:-200%}}
 
-  .doc-workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;height:0;overflow:hidden}
+  .doc-workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden}
 
-  /* left input panel */
-  .doc-input-col{width:360px;flex-shrink:0;display:flex;flex-direction:column;min-height:0;overflow:hidden;background:var(--surf);border:1px solid var(--border);border-radius:var(--r)}
+  /* FIX 1: increased width to 360px, added overflow:hidden */
+  .doc-input-col{width:360px;flex-shrink:0;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 
-  /* right output panel */
-  .doc-output-col{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .doc-output-col{flex:1;min-width:0;display:flex;flex-direction:column}
 
-  /* scrollable cards area fills remaining space */
-  .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding:12px 12px 4px;min-height:0}
+  /* FIX 2: added min-height:0, increased padding-bottom to 12px */
+  .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:12px;min-height:0}
 
   .doc-cards-scroll::-webkit-scrollbar{width:4px}
   .doc-cards-scroll::-webkit-scrollbar-thumb{background:#e0e0e0;border-radius:2px}
 
-  /* button wrapper pinned at bottom of the panel */
-  .doc-gen-btn-wrap{flex-shrink:0;padding:10px 12px 12px;background:var(--surf);border-top:1px solid var(--border)}
+  /* FIX 3: added background and border-top so scrolled content doesn't bleed through */
+  .doc-gen-btn-wrap{flex-shrink:0;padding:10px 0 0;background:var(--surf);border-top:1px solid var(--border)}
 
-  /* button fills wrapper exactly */
+  /* FIX 4: override btn-primary margin/width inside the doc generate button wrapper */
   .doc-gen-btn-wrap .btn-primary{width:100%;margin:0}
 
-  .input-card{background:var(--surf);border:1px solid var(--border2);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+  .input-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
   .input-card-hdr{padding:9px 13px;background:var(--surf2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
   .input-card-hdr h4{font-size:11px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px}
   .card-tag{background:transparent;color:var(--muted);border:1px solid var(--border);font-size:9px;font-weight:600;padding:1px 7px;border-radius:3px;letter-spacing:0.3px}
@@ -502,7 +501,6 @@ const DocCreator = memo(({ showToast }) => {
   return (
     <div className="doc-workspace">
       <div className="doc-input-col">
-        <div className="panel-hdr"><h3>Input</h3></div>
         <div className="doc-cards-scroll">
 
           <div className="input-card">
