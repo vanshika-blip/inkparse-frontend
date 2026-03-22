@@ -163,24 +163,24 @@ const css = `
 
   .doc-workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden}
 
-  /* FIX 1: increased width to 360px, added overflow:hidden */
-  .doc-input-col{width:360px;flex-shrink:0;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  /* doc input column styled as a panel with pinned footer button */
+  .doc-input-col{width:360px;flex-shrink:0;display:flex;flex-direction:column;min-height:0;overflow:hidden;background:var(--surf);border:1px solid var(--border);border-radius:var(--r)}
 
   .doc-output-col{flex:1;min-width:0;display:flex;flex-direction:column}
 
-  /* FIX 2: added min-height:0, increased padding-bottom to 12px */
-  .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:12px;min-height:0}
+  /* scrollable cards area fills remaining space */
+  .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding:12px 12px 4px;min-height:0}
 
   .doc-cards-scroll::-webkit-scrollbar{width:4px}
   .doc-cards-scroll::-webkit-scrollbar-thumb{background:#e0e0e0;border-radius:2px}
 
-  /* FIX 3: added background and border-top so scrolled content doesn't bleed through */
-  .doc-gen-btn-wrap{flex-shrink:0;padding:10px 0 0;background:var(--surf);border-top:1px solid var(--border)}
+  /* button wrapper pinned at bottom of the panel */
+  .doc-gen-btn-wrap{flex-shrink:0;padding:10px 12px 12px;background:var(--surf);border-top:1px solid var(--border)}
 
-  /* FIX 4: override btn-primary margin/width inside the doc generate button wrapper */
+  /* button fills wrapper exactly */
   .doc-gen-btn-wrap .btn-primary{width:100%;margin:0}
 
-  .input-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+  .input-card{background:var(--surf);border:1px solid var(--border2);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
   .input-card-hdr{padding:9px 13px;background:var(--surf2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
   .input-card-hdr h4{font-size:11px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px}
   .card-tag{background:transparent;color:var(--muted);border:1px solid var(--border);font-size:9px;font-weight:600;padding:1px 7px;border-radius:3px;letter-spacing:0.3px}
@@ -501,6 +501,7 @@ const DocCreator = memo(({ showToast }) => {
   return (
     <div className="doc-workspace">
       <div className="doc-input-col">
+        <div className="panel-hdr"><h3>Input</h3></div>
         <div className="doc-cards-scroll">
 
           <div className="input-card">
