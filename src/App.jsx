@@ -54,6 +54,7 @@ async function getMarked() {
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
+  html,body,#root{height:100%;margin:0;padding:0;overflow:hidden}
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   :root{
     --bg:#f5f5f5;
@@ -72,30 +73,30 @@ const css = `
   body{background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink);min-height:100vh;overflow-x:hidden}
   .app{height:100vh;width:100%;max-width:100vw;display:flex;flex-direction:column;overflow:hidden}
 
-  .hdr{background:var(--surf);border-bottom:1px solid var(--border);padding:11px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:200;width:100%;max-width:100%;overflow:hidden;}
-  .hdr-title h1{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-0.3px}
-  .hdr-title p{font-size:10px;color:var(--muted);margin-top:1px;font-weight:400}
+  .hdr{background:var(--surf);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:200;width:100%;max-width:100%;overflow:hidden;}
+  .hdr-title h1{font-size:13px;font-weight:700;color:var(--ink);letter-spacing:-0.3px}
+  .hdr-title p{font-size:9px;color:var(--muted);margin-top:0px;font-weight:400}
   .hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-  .badge{background:var(--ink);color:#fff;border-radius:5px;padding:3px 10px;font-size:10px;font-weight:600;letter-spacing:0.3px;}
+  .badge{background:var(--ink);color:#fff;border-radius:5px;padding:2px 9px;font-size:10px;font-weight:600;letter-spacing:0.3px;}
 
   .layout{display:flex;flex:1;min-height:0;overflow:hidden;width:100%;max-width:100%;}
 
-  .sidenav{width:210px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
-  .sidenav-section{font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;padding:12px 10px 5px;}
-  .sidenav-btn{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:7px;background:none;border:none;color:var(--muted2);cursor:pointer;font-size:12px;font-weight:500;font-family:'Plus Jakarta Sans',sans-serif;width:100%;text-align:left;transition:all .15s;}
+  .sidenav{width:180px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--border);padding:10px 6px;display:flex;flex-direction:column;gap:1px;overflow-y:hidden;}
+  .sidenav-section{font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;padding:10px 10px 4px;}
+  .sidenav-btn{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;background:none;border:none;color:var(--muted2);cursor:pointer;font-size:11px;font-weight:500;font-family:'Plus Jakarta Sans',sans-serif;width:100%;text-align:left;transition:all .15s;}
   .sidenav-btn:hover{background:var(--surf2);color:var(--ink)}
   .sidenav-btn.active{background:var(--surf3);color:var(--ink);font-weight:600}
   .sidenav-btn .sicon{font-size:13px;width:18px;text-align:center;opacity:0.5}
   .sidenav-btn.active .sicon{opacity:1}
-  .sidenav-info{background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:auto;}
-  .info-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;color:var(--muted2)}
+  .sidenav-info{background:var(--surf2);border:1px solid var(--border);border-radius:7px;padding:10px;margin-top:auto;}
+  .info-row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;color:var(--muted2)}
   .info-val{color:var(--ink);font-weight:600}
 
   .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;min-width:0;}
-  .workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden;width:100%;min-width:0;}
+  .workspace{flex:1;display:flex;gap:10px;padding:10px;min-height:0;overflow:hidden;width:100%;min-width:0;}
 
   .panel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;}
-  .panel-hdr{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surf);}
+  .panel-hdr{padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surf);}
   .panel-hdr h3{font-size:11px;font-weight:600;color:var(--ink);letter-spacing:0.1px}
   .panel-label{font-size:9px;font-weight:600;color:var(--muted);padding:6px 12px;border-bottom:1px solid var(--border);background:var(--surf2);flex-shrink:0;letter-spacing:0.3px;}
 
@@ -104,7 +105,7 @@ const css = `
   .type-toggle button.on{background:var(--surf);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
   .type-toggle button:hover:not(.on){color:var(--ink2)}
 
-  .upload-panel{width:290px;flex-shrink:0}
+  .upload-panel{width:270px;flex-shrink:0}
   .drop-zone{flex:1;display:flex;align-items:center;justify-content:center;border:1.5px dashed var(--border2);border-radius:8px;margin:12px;cursor:pointer;transition:all .2s;background:var(--surf2);}
   .drop-zone:hover,.drop-zone.drag{border-color:#aaa;background:var(--surf3)}
   .drop-inner{display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;padding:24px}
@@ -161,8 +162,8 @@ const css = `
   .loading-bar{height:2px;background:linear-gradient(90deg,#111,#ccc,#111);background-size:200%;animation:lbar 1.2s linear infinite;flex-shrink:0}
   @keyframes lbar{from{background-position:200%}to{background-position:-200%}}
 
-  .doc-workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden;width:100%;min-width:0;}
-  .doc-input-col{width:310px;flex-shrink:0;display:flex;flex-direction:column;min-height:0}
+  .doc-workspace{flex:1;display:flex;gap:10px;padding:10px;min-height:0;overflow:hidden;width:100%;min-width:0;}
+  .doc-input-col{width:280px;flex-shrink:0;display:flex;flex-direction:column;min-height:0}
   .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:4px}
   .doc-cards-scroll::-webkit-scrollbar{width:4px}
   .doc-cards-scroll::-webkit-scrollbar-thumb{background:#e0e0e0;border-radius:2px}
@@ -584,6 +585,17 @@ export default function App() {
     { id: "doc",   label: "Prompt → Client Doc", icon: "◻" },
   ];
 
+  useEffect(() => {
+    // Ensure viewport meta is set correctly for production
+    let meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'viewport';
+      document.head.appendChild(meta);
+    }
+    meta.content = 'width=device-width, initial-scale=1';
+  }, []);
+
   return (
     <>
       <style>{css}</style>
@@ -591,7 +603,7 @@ export default function App() {
 
       <div className="app">
         <div className="hdr">
-          <ScribbleLogo size={32} />
+          <ScribbleLogo size={26} />
           <div className="hdr-title">
             <h1>InkParse</h1>
             <p>AI-powered · by Hunar</p>
