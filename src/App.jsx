@@ -162,12 +162,23 @@ const css = `
   @keyframes lbar{from{background-position:200%}to{background-position:-200%}}
 
   .doc-workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden}
-  .doc-input-col{width:310px;flex-shrink:0;display:flex;flex-direction:column;min-height:0}
-  .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:4px}
+
+  /* FIX 1: increased width to 360px, added overflow:hidden */
+  .doc-input-col{width:360px;flex-shrink:0;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+
+  .doc-output-col{flex:1;min-width:0;display:flex;flex-direction:column}
+
+  /* FIX 2: added min-height:0, increased padding-bottom to 12px */
+  .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:12px;min-height:0}
+
   .doc-cards-scroll::-webkit-scrollbar{width:4px}
   .doc-cards-scroll::-webkit-scrollbar-thumb{background:#e0e0e0;border-radius:2px}
-  .doc-gen-btn-wrap{flex-shrink:0;padding-top:10px}
-  .doc-output-col{flex:1;min-width:0;display:flex;flex-direction:column}
+
+  /* FIX 3: added background and border-top so scrolled content doesn't bleed through */
+  .doc-gen-btn-wrap{flex-shrink:0;padding:10px 0 0;background:var(--surf);border-top:1px solid var(--border)}
+
+  /* FIX 4: override btn-primary margin/width inside the doc generate button wrapper */
+  .doc-gen-btn-wrap .btn-primary{width:100%;margin:0}
 
   .input-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
   .input-card-hdr{padding:9px 13px;background:var(--surf2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
@@ -535,7 +546,7 @@ const DocCreator = memo(({ showToast }) => {
         </div>
 
         <div className="doc-gen-btn-wrap">
-          <button className="btn-primary" style={{ width: "100%", margin: 0 }} onClick={generate} disabled={loading}>
+          <button className="btn-primary" onClick={generate} disabled={loading}>
             {loading ? <><span className="spin" /> Generating Document…</> : "Generate Client Document →"}
           </button>
         </div>
