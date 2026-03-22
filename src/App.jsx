@@ -69,16 +69,16 @@ const css = `
     --r:10px;
   }
 
-  body{background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink);min-height:100vh}
-  .app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  body{background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink);min-height:100vh;overflow-x:hidden}
+  .app{height:100vh;width:100%;max-width:100vw;display:flex;flex-direction:column;overflow:hidden}
 
-  .hdr{background:var(--surf);border-bottom:1px solid var(--border);padding:11px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:200;}
+  .hdr{background:var(--surf);border-bottom:1px solid var(--border);padding:11px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:200;width:100%;max-width:100%;overflow:hidden;}
   .hdr-title h1{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-0.3px}
   .hdr-title p{font-size:10px;color:var(--muted);margin-top:1px;font-weight:400}
   .hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
   .badge{background:var(--ink);color:#fff;border-radius:5px;padding:3px 10px;font-size:10px;font-weight:600;letter-spacing:0.3px;}
 
-  .layout{display:flex;flex:1;min-height:0;overflow:hidden}
+  .layout{display:flex;flex:1;min-height:0;overflow:hidden;width:100%;max-width:100%;}
 
   .sidenav{width:210px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
   .sidenav-section{font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;padding:12px 10px 5px;}
@@ -91,8 +91,8 @@ const css = `
   .info-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;color:var(--muted2)}
   .info-val{color:var(--ink);font-weight:600}
 
-  .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
-  .workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden}
+  .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;min-width:0;}
+  .workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden;width:100%;min-width:0;}
 
   .panel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;}
   .panel-hdr{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surf);}
@@ -161,24 +161,13 @@ const css = `
   .loading-bar{height:2px;background:linear-gradient(90deg,#111,#ccc,#111);background-size:200%;animation:lbar 1.2s linear infinite;flex-shrink:0}
   @keyframes lbar{from{background-position:200%}to{background-position:-200%}}
 
-  .doc-workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden}
-
-  /* FIX 1: increased width to 360px, added overflow:hidden */
-  .doc-input-col{width:360px;flex-shrink:0;display:flex;flex-direction:column;min-height:0;overflow:hidden}
-
-  .doc-output-col{flex:1;min-width:0;display:flex;flex-direction:column}
-
-  /* FIX 2: added min-height:0, increased padding-bottom to 12px */
-  .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:12px;min-height:0}
-
+  .doc-workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden;width:100%;min-width:0;}
+  .doc-input-col{width:310px;flex-shrink:0;display:flex;flex-direction:column;min-height:0}
+  .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:4px}
   .doc-cards-scroll::-webkit-scrollbar{width:4px}
   .doc-cards-scroll::-webkit-scrollbar-thumb{background:#e0e0e0;border-radius:2px}
-
-  /* FIX 3: added background and border-top so scrolled content doesn't bleed through */
-  .doc-gen-btn-wrap{flex-shrink:0;padding:10px 0 0;background:var(--surf);border-top:1px solid var(--border)}
-
-  /* FIX 4: override btn-primary margin/width inside the doc generate button wrapper */
-  .doc-gen-btn-wrap .btn-primary{width:100%;margin:0}
+  .doc-gen-btn-wrap{flex-shrink:0;padding-top:10px}
+  .doc-output-col{flex:1;min-width:0;display:flex;flex-direction:column}
 
   .input-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
   .input-card-hdr{padding:9px 13px;background:var(--surf2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
@@ -546,7 +535,7 @@ const DocCreator = memo(({ showToast }) => {
         </div>
 
         <div className="doc-gen-btn-wrap">
-          <button className="btn-primary" onClick={generate} disabled={loading}>
+          <button className="btn-primary" style={{ width: "100%", margin: 0 }} onClick={generate} disabled={loading}>
             {loading ? <><span className="spin" /> Generating Document…</> : "Generate Client Document →"}
           </button>
         </div>
