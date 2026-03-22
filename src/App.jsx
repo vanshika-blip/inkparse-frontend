@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 
 // ── IMPORTANT: Set this to your Render backend URL ────────────────────────────
-const BACKEND_URL = "https://your-app-name.onrender.com";
+const BACKEND_URL = "https://inkparse-backend.onrender.com";
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
 const ScribbleLogo = ({ size = 36 }) => (
