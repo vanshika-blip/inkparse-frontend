@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, memo } from "react";
 // ── IMPORTANT: Set this to your Render backend URL ────────────────────────────
 const BACKEND_URL = "https://inkparse-backend.onrender.com";
 
+
 // ── Logo ──────────────────────────────────────────────────────────────────────
 const ScribbleLogo = ({ size = 36 }) => (
   <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
@@ -163,9 +164,11 @@ const css = `
 
   /* ── Doc Creator ── */
   .doc-workspace{flex:1;display:flex;gap:14px;padding:14px;height:calc(100vh - 57px);min-height:0;overflow:hidden}
-  .doc-input-col{width:340px;flex-shrink:0;display:flex;flex-direction:column;gap:11px;overflow-y:auto}
-  .doc-input-col::-webkit-scrollbar{width:4px}
-  .doc-input-col::-webkit-scrollbar-thumb{background:rgba(0,255,135,0.15);border-radius:2px}
+  .doc-input-col{width:320px;flex-shrink:0;display:flex;flex-direction:column;min-height:0}
+  .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:4px}
+  .doc-cards-scroll::-webkit-scrollbar{width:4px}
+  .doc-cards-scroll::-webkit-scrollbar-thumb{background:rgba(0,255,135,0.15);border-radius:2px}
+  .doc-gen-btn-wrap{flex-shrink:0;padding-top:10px}
   .doc-output-col{flex:1;min-width:0;display:flex;flex-direction:column}
 
   /* ── Input cards ── */
@@ -174,8 +177,8 @@ const css = `
   .input-card-hdr h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--green);display:flex;align-items:center;gap:7px}
   .card-tag{background:rgba(0,255,135,0.1);color:var(--green);border:1px solid rgba(0,255,135,0.2);font-size:8px;font-weight:700;padding:1px 7px;border-radius:3px;letter-spacing:0.5px;text-transform:uppercase}
   .card-tag.opt{background:transparent;color:var(--muted);border-color:var(--border)}
-  .prompt-area{width:100%;border:none;outline:none;resize:none;padding:11px 13px;font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;color:#6ACA8A;background:#050505;min-height:120px}
-  .prompt-area::placeholder{color:var(--muted);opacity:0.7}
+  .prompt-area{width:100%;border:none;outline:none;resize:vertical;padding:11px 13px;font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;color:#6ACA8A;background:#050505;min-height:90px}
+  .prompt-area::placeholder{color:var(--muted);opacity:0.6;font-size:10px}
   .ctx-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:11px 13px}
   .field-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:4px}
   .field-input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:5px;padding:7px 10px;font-family:'Space Mono',monospace;font-size:11px;color:var(--text);outline:none}
@@ -549,52 +552,61 @@ const DocCreator = memo(({ showToast }) => {
       {/* Inputs */}
       <div className="doc-input-col">
 
-        {/* Context */}
-        <div className="input-card">
-          <div className="input-card-hdr"><h4>◈ Document Context</h4></div>
-          <div className="ctx-grid">
-            <div>
-              <div className="field-label">Client Name</div>
-              <input className="field-input" placeholder="e.g. Swiggy" value={ctx.client} onChange={(e) => setCtx({ ...ctx, client: e.target.value })} />
+        {/* Scrollable cards */}
+        <div className="doc-cards-scroll">
+
+          {/* Context */}
+          <div className="input-card">
+            <div className="input-card-hdr"><h4>◈ Document Context</h4></div>
+            <div className="ctx-grid">
+              <div>
+                <div className="field-label">Client Name</div>
+                <input className="field-input" placeholder="e.g. Swiggy" value={ctx.client} onChange={(e) => setCtx({ ...ctx, client: e.target.value })} />
+              </div>
+              <div>
+                <div className="field-label">Version</div>
+                <input className="field-input" placeholder="v1.0" value={ctx.version} onChange={(e) => setCtx({ ...ctx, version: e.target.value })} />
+              </div>
             </div>
-            <div>
-              <div className="field-label">Version</div>
-              <input className="field-input" placeholder="v1.0" value={ctx.version} onChange={(e) => setCtx({ ...ctx, version: e.target.value })} />
+            <div className="field-full">
+              <div className="field-label">Product / Use Case</div>
+              <input className="field-input" placeholder="e.g. Delivery Executive Onboarding" value={ctx.product} onChange={(e) => setCtx({ ...ctx, product: e.target.value })} />
             </div>
           </div>
-          <div className="field-full">
-            <div className="field-label">Product / Use Case</div>
-            <input className="field-input" placeholder="e.g. Delivery Executive Onboarding" value={ctx.product} onChange={(e) => setCtx({ ...ctx, product: e.target.value })} />
+
+          {/* Script Prompt */}
+          <div className="input-card">
+            <div className="input-card-hdr">
+              <h4>◉ Call Script Prompt</h4>
+              <span className="card-tag opt">Optional</span>
+            </div>
+            <textarea className="prompt-area" style={{ minHeight: 110 }}
+              placeholder="Paste your call script prompt here..."
+              value={scriptPrompt} onChange={(e) => setScriptPrompt(e.target.value)} />
           </div>
+
+          {/* Eval Prompt */}
+          <div className="input-card">
+            <div className="input-card-hdr">
+              <h4>▧ Evaluation Prompt</h4>
+              <span className="card-tag opt">Optional</span>
+            </div>
+            <textarea className="prompt-area" style={{ minHeight: 100 }}
+              placeholder="Paste your evaluation/scoring prompt here..."
+              value={evalPrompt} onChange={(e) => setEvalPrompt(e.target.value)} />
+          </div>
+
+          {error && <div className="error-box" style={{ margin: 0 }}>{error}</div>}
+
         </div>
 
-        {/* Script Prompt */}
-        <div className="input-card">
-          <div className="input-card-hdr">
-            <h4>◉ Call Script Prompt</h4>
-            <span className="card-tag opt">Optional</span>
-          </div>
-          <textarea className="prompt-area" style={{ minHeight: 170 }}
-            placeholder={"Paste your AI call script prompt here…\n\nExample:\n\"You are an AI agent for Swiggy. Introduce the delivery executive job, ask if willing to pay ₹2 onboarding fee. If yes → payment. If no → feedback capture…\""}
-            value={scriptPrompt} onChange={(e) => setScriptPrompt(e.target.value)} />
+        {/* Button pinned at bottom */}
+        <div className="doc-gen-btn-wrap">
+          <button className="btn-primary" style={{ width: "100%", margin: 0 }} onClick={generate} disabled={loading}>
+            {loading ? <><span className="spin" /> Generating Document...</> : "✦ Generate Client Document"}
+          </button>
         </div>
 
-        {/* Eval Prompt */}
-        <div className="input-card">
-          <div className="input-card-hdr">
-            <h4>◧ Evaluation Prompt</h4>
-            <span className="card-tag opt">Optional</span>
-          </div>
-          <textarea className="prompt-area" style={{ minHeight: 150 }}
-            placeholder={"Paste your evaluation/scoring prompt here…\n\nExample:\n\"Score the call: Opening (20pts), Objection handling (25pts), Pitch clarity (20pts), Closing (20pts), Compliance (15pts). Pass ≥ 70…\""}
-            value={evalPrompt} onChange={(e) => setEvalPrompt(e.target.value)} />
-        </div>
-
-        {error && <div className="error-box">{error}</div>}
-
-        <button className="btn-primary" style={{ width: "100%", margin: 0 }} onClick={generate} disabled={loading}>
-          {loading ? <><span className="spin" /> Generating Document…</> : "✦ Generate Client Document"}
-        </button>
       </div>
 
       {/* Output */}
