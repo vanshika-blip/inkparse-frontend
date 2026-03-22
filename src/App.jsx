@@ -78,7 +78,7 @@ const css = `
   .hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
   .badge{background:var(--ink);color:#fff;border-radius:5px;padding:3px 10px;font-size:10px;font-weight:600;letter-spacing:0.3px;}
 
-  .layout{display:flex;flex:1;min-height:0;overflow:hidden}
+  .layout{display:flex;flex:1;min-height:0;height:0;overflow:hidden}
 
   .sidenav{width:210px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
   .sidenav-section{font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;padding:12px 10px 5px;}
@@ -91,8 +91,8 @@ const css = `
   .info-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;color:var(--muted2)}
   .info-val{color:var(--ink);font-weight:600}
 
-  .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
-  .workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden}
+  .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;height:0}
+  .workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden;height:0}
 
   .panel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;}
   .panel-hdr{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surf);}
@@ -161,12 +161,13 @@ const css = `
   .loading-bar{height:2px;background:linear-gradient(90deg,#111,#ccc,#111);background-size:200%;animation:lbar 1.2s linear infinite;flex-shrink:0}
   @keyframes lbar{from{background-position:200%}to{background-position:-200%}}
 
-  .doc-workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;overflow:hidden}
+  .doc-workspace{flex:1;display:flex;gap:12px;padding:14px;min-height:0;height:0;overflow:hidden}
 
-  /* doc input column styled as a panel with pinned footer button */
+  /* left input panel */
   .doc-input-col{width:360px;flex-shrink:0;display:flex;flex-direction:column;min-height:0;overflow:hidden;background:var(--surf);border:1px solid var(--border);border-radius:var(--r)}
 
-  .doc-output-col{flex:1;min-width:0;display:flex;flex-direction:column}
+  /* right output panel */
+  .doc-output-col{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 
   /* scrollable cards area fills remaining space */
   .doc-cards-scroll{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding:12px 12px 4px;min-height:0}
