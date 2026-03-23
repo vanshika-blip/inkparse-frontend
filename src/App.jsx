@@ -166,6 +166,13 @@ const css = `
   .doc-preview-full { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   .doc-iframe { flex: 1; border: none; min-height: 0; background: white; width: 100%; border-radius: 0 0 var(--r) var(--r); }
 
+  /* ── Doc split view ── */
+  .doc-result-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+  .doc-edit-col { width: 38%; border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; flex-shrink: 0; }
+  .doc-edit-area { flex: 1; width: 100%; border: none; outline: none; resize: none; padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 10.5px; line-height: 1.7; color: #374151; background: #fafafa; overflow: auto; white-space: pre; min-height: 0; tab-size: 2; }
+  .doc-preview-col { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .doc-iframe { flex: 1; border: none; min-height: 0; background: white; width: 100%; }
+
   /* ── Input cards ── */
   .input-card { background: var(--surf); border: 1px solid var(--border); border-radius: var(--r); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
   .input-card-hdr { padding: 9px 13px; background: var(--surf2); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
@@ -409,14 +416,16 @@ const DocCreator = memo(({ showToast }) => {
   const [pdfLoading, setPdfLoading]     = useState(false);
   const [error, setError]               = useState("");
 
-  const iframeRef = useRef(null);
+  const previewIframeRef = useRef(null);  // visible preview iframe
 
-  // Update iframe whenever docHtml changes
-  useEffect(() => {
-    if (docHtml && iframeRef.current) {
-      iframeRef.current.srcdoc = docHtml;
+  // Keep preview iframe in sync with edited HTML
+  const syncPreview = useCallback((html) => {
+    if (previewIframeRef.current) {
+      previewIframeRef.current.srcdoc = html;
     }
-  }, [docHtml]);
+  }, []);
+
+  useEffect(() => { if (docHtml) syncPreview(docHtml); }, [docHtml, syncPreview]);
 
   const generate = async () => {
     if (!scriptPrompt && !evalPrompt) { setError("Please provide at least one prompt."); return; }
@@ -437,65 +446,42 @@ const DocCreator = memo(({ showToast }) => {
     } finally { setLoading(false); }
   };
 
-  // ── PDF: open in new tab with print-colour CSS and trigger print dialog ──
-  const downloadPDF = useCallback(() => {
+  // ── PDF: inject colour-print CSS into a hidden iframe, call print() on it ──
+  // ── PDF: POST HTML → Puppeteer on backend → real .pdf binary download ──
+  const downloadPDF = useCallback(async () => {
     if (!docHtml || pdfLoading) return;
     setPdfLoading(true);
-
+    showToast("Generating PDF…", "info");
     try {
-      // Inject print-colour CSS into the document before opening
-      const printCss = `
-        <style id="inkparse-print">
-          @media print {
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-            body { margin: 0 !important; }
-            .no-print { display: none !important; }
-          }
-        </style>
-      `;
+      const filename = [ctx.client, ctx.product, ctx.version].filter(Boolean).join("_") || "AI_Call_Documentation";
+      const res = await fetch(`${BACKEND_URL}/api/html-to-pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html: docHtml, filename }),
+      });
 
-      // Insert print CSS right after <head>
-      let printHtml = docHtml;
-      if (printHtml.includes("<head>")) {
-        printHtml = printHtml.replace("<head>", "<head>" + printCss);
-      } else if (printHtml.includes("<HEAD>")) {
-        printHtml = printHtml.replace("<HEAD>", "<HEAD>" + printCss);
-      } else {
-        printHtml = printCss + printHtml;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown server error" }));
+        throw new Error(err.error || `Server error ${res.status}`);
       }
 
-      // Also inject an auto-print script
-      const printScript = `<script>window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 800); });<\/script>`;
-      if (printHtml.includes("</body>")) {
-        printHtml = printHtml.replace("</body>", printScript + "</body>");
-      } else {
-        printHtml = printHtml + printScript;
-      }
-
-      const blob = new Blob([printHtml], { type: "text/html;charset=utf-8" });
+      const blob = await res.blob();
       const url  = URL.createObjectURL(blob);
-      const win  = window.open(url, "_blank");
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = filename + ".pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
 
-      if (!win) {
-        // Popup blocked fallback: download as HTML
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "AI_Call_Documentation.html";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        showToast("Popup blocked — downloaded as HTML instead", "info");
-      } else {
-        showToast("Print dialog will open — choose 'Save as PDF'", "info");
-        // Revoke blob URL after enough time
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
-      }
+      showToast("PDF downloaded ✓", "ok");
     } catch (err) {
-      showToast("PDF export failed: " + err.message, "err");
+      showToast("PDF failed: " + err.message, "err");
     } finally {
       setPdfLoading(false);
     }
-  }, [docHtml, pdfLoading, showToast]);
+  }, [docHtml, pdfLoading, ctx, showToast]);
 
   // Download raw HTML
   const downloadHTML = useCallback(() => {
@@ -560,17 +546,17 @@ const DocCreator = memo(({ showToast }) => {
         </button>
       </div>
 
-      {/* ── Right: output panel — live preview only ── */}
+      {/* ── Right: split editor + preview ── */}
       <div className="panel doc-output-col">
         {loading && <div className="loading-bar" />}
 
         <div className="panel-hdr">
-          <span className="panel-title">Live Preview</span>
+          <span className="panel-title">Document</span>
           {docHtml && (
             <div className="dl-bar">
               <button className="btn-dl" onClick={downloadHTML} title="Download .html file">↓ HTML</button>
-              <button className="btn-pdf" onClick={downloadPDF} disabled={pdfLoading} title="Opens in new tab — choose Save as PDF in print dialog">
-                {pdfLoading ? <><span className="btn-pdf-spin" /> Opening…</> : "⎙ Save as PDF"}
+              <button className="btn-pdf" onClick={downloadPDF} disabled={pdfLoading} title="Server renders a real PDF — direct download">
+                {pdfLoading ? <><span className="btn-pdf-spin" /> Generating…</> : "↓ PDF"}
               </button>
             </div>
           )}
@@ -592,16 +578,36 @@ const DocCreator = memo(({ showToast }) => {
           </div>
         )}
 
-        {/* ── Full-width live iframe preview ── */}
+        {/* ── Split: HTML editor (left) + iframe preview (right) ── */}
         {docHtml && !loading && (
-          <div className="doc-preview-full">
-            <iframe
-              ref={iframeRef}
-              className="doc-iframe"
-              title="Document Preview"
-              sandbox="allow-same-origin allow-scripts"
-              srcdoc={docHtml}
-            />
+          <div className="doc-result-body">
+
+            {/* HTML source editor */}
+            <div className="doc-edit-col">
+              <div className="panel-label">HTML — edit freely</div>
+              <textarea
+                className="doc-edit-area"
+                value={docHtml}
+                onChange={(e) => {
+                  setDocHtml(e.target.value);
+                  syncPreview(e.target.value);
+                }}
+                spellCheck={false}
+              />
+            </div>
+
+            {/* Live iframe preview */}
+            <div className="doc-preview-col">
+              <div className="panel-label">Live Preview</div>
+              <iframe
+                ref={previewIframeRef}
+                className="doc-iframe"
+                title="Document Preview"
+                sandbox="allow-same-origin allow-scripts"
+                srcdoc={docHtml}
+              />
+            </div>
+
           </div>
         )}
       </div>
