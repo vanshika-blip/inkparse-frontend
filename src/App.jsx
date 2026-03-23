@@ -181,6 +181,29 @@ const css = `
   }
   .doc-live-inner:focus-within { box-shadow: 0 0 0 2px rgba(0,122,122,0.18), 0 1px 8px rgba(0,0,0,0.07); }
 
+  /* ── Doc editing toolbar buttons (panel header) ── */
+  .doc-tool-btn { font-family: 'Archivo', sans-serif; font-size: 10px; font-weight: 600; background: var(--surf3); border: 1px solid var(--border2); color: var(--ink2); padding: 3px 9px; border-radius: 4px; cursor: pointer; transition: all 0.13s; }
+  .doc-tool-btn:hover { background: var(--navy); color: white; border-color: var(--navy); }
+  .doc-tool-del:hover { background: #C0392B; border-color: #C0392B; color: white; }
+
+  /* ── Floating text-selection toolbar ── */
+  .float-toolbar {
+    position: absolute;
+    z-index: 200;
+    background: #1a1a1a;
+    border-radius: 6px;
+    padding: 4px 6px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    transform: translateX(-50%);
+    pointer-events: all;
+  }
+  .float-toolbar button { background: none; border: none; color: white; font-family: 'Archivo', sans-serif; font-size: 12px; font-weight: 600; padding: 3px 7px; border-radius: 4px; cursor: pointer; transition: background 0.1s; }
+  .float-toolbar button:hover { background: rgba(255,255,255,0.15); }
+  .float-sep { width: 1px; height: 16px; background: rgba(255,255,255,0.2); margin: 0 2px; flex-shrink: 0; }
+
 
   /* ── Input cards ── */
   .input-card { background: var(--surf); border: 1px solid var(--border); border-radius: var(--r); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
@@ -424,20 +447,126 @@ const DocCreator = memo(({ showToast }) => {
   const [loading, setLoading]           = useState(false);
   const [pdfLoading, setPdfLoading]     = useState(false);
   const [error, setError]               = useState("");
+  const [toolbar, setToolbar]           = useState({ show: false, x: 0, y: 0 });
 
-  // The live-editable container — we inject innerHTML once, then read it back for PDF/HTML export
-  const liveRef = useRef(null);
+  const liveRef    = useRef(null);
+  const wrapRef    = useRef(null);
+  const toolbarRef = useRef(null);
 
-  // Inject HTML into the contenteditable div whenever docHtml changes from generation
+  // ── Inject HTML once after generation ──
   useEffect(() => {
     if (liveRef.current && docHtml) {
       liveRef.current.innerHTML = docHtml;
     }
   }, [docHtml]);
 
-  // Read current edited content from the DOM (user may have edited it)
+  // ── Hide toolbar on outside click ──
+  useEffect(() => {
+    const handler = (e) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target)) {
+        setToolbar(t => ({ ...t, show: false }));
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // ── Show floating toolbar on text selection ──
+  const handleSelect = useCallback(() => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !liveRef.current?.contains(sel.anchorNode)) {
+      setToolbar(t => ({ ...t, show: false }));
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const rect  = range.getBoundingClientRect();
+    const wrap  = wrapRef.current?.getBoundingClientRect() || { left: 0, top: 0 };
+    setToolbar({ show: true, x: rect.left - wrap.left + rect.width / 2, y: rect.top - wrap.top - 44 });
+  }, []);
+
+  const execCmd = (cmd, value = null) => {
+    liveRef.current?.focus();
+    document.execCommand(cmd, false, value);
+    setToolbar(t => ({ ...t, show: false }));
+  };
+
+  // ── Add a new call step row at the bottom of the flow ──
+  const addStep = useCallback(() => {
+    if (!liveRef.current) return;
+    // Find the last .call-flow-step or .flow-step element, count steps
+    const existing = liveRef.current.querySelectorAll("[class*='flow-step'], [class*='call-flow-step']");
+    const num = existing.length + 1;
+    const isEven = num % 2 === 0;
+    const pill = isEven ? "#007A7A" : "#0D2B4E";
+    const html = `
+      <div style="margin-top:4px;">
+        <div style="display:flex;align-items:stretch;">
+          <div style="width:26px;flex-shrink:0;background:${pill};color:white;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;border-radius:4px 0 0 4px;">${num}</div>
+          <div style="flex:1;background:#F4F7FA;padding:5px 7px;border-top:1px solid #D0D7E0;border-bottom:1px solid #D0D7E0;" contenteditable="true">
+            <div style="font-size:9px;font-weight:700;color:#0D2B4E;">New Step</div>
+            <div style="font-size:7.5px;color:#374151;line-height:1.4;margin-top:1px;">Describe what happens in this step</div>
+          </div>
+          <div style="width:100px;flex-shrink:0;background:#EBF0F7;padding:5px 6px;border-top:1px solid #D0D7E0;border-bottom:1px solid #D0D7E0;">
+            <div style="font-size:6.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6B7280;">Saves</div>
+            <div style="font-size:7.5px;color:#007A7A;font-weight:600;margin-top:1px;">variable_name</div>
+          </div>
+          <div style="width:28px;flex-shrink:0;background:#FEF5E7;display:flex;align-items:center;justify-content:center;font-size:9px;color:#C9882A;font-weight:700;border-top:1px solid #D0D7E0;border-bottom:1px solid #D0D7E0;border-radius:0 4px 4px 0;">→</div>
+        </div>
+        <div style="margin-left:13px;width:1px;height:6px;background:#007A7A;"></div>
+      </div>`;
+    // Insert after last flow step, or at end of live area
+    if (existing.length > 0) {
+      const last = existing[existing.length - 1];
+      last.insertAdjacentHTML("afterend", html);
+    } else {
+      liveRef.current.insertAdjacentHTML("beforeend", html);
+    }
+    showToast("Step added ✓", "ok");
+  }, [showToast]);
+
+  // ── Add a new info card ──
+  const addCard = useCallback(() => {
+    if (!liveRef.current) return;
+    const colors = ["#007A7A", "#C9882A", "#0D2B4E", "#C0392B"];
+    const pick = colors[Math.floor(Math.random() * colors.length)];
+    const html = `
+      <div style="background:#F4F7FA;border-radius:6px;padding:9px 10px;border-left:3px solid ${pick};margin-bottom:10px;margin-top:6px;">
+        <div style="font-size:8px;font-weight:800;color:#6B7280;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:5px;" contenteditable="true">NEW CARD TITLE</div>
+        <div style="display:flex;align-items:flex-start;gap:5px;margin-top:3px;">
+          <span style="width:5px;height:5px;border-radius:50%;background:${pick};flex-shrink:0;margin-top:3px;display:inline-block;"></span>
+          <p style="font-size:8px;color:#374151;line-height:1.5;" contenteditable="true">Click to edit this content. You can add your notes, rules, or information here.</p>
+        </div>
+      </div>`;
+    liveRef.current.insertAdjacentHTML("beforeend", html);
+    showToast("Card added ✓", "ok");
+  }, [showToast]);
+
+  // ── Delete the element the cursor is inside ──
+  const deleteBlock = useCallback(() => {
+    const sel = window.getSelection();
+    if (!sel || !liveRef.current) return;
+    let node = sel.anchorNode;
+    // Walk up until we find a direct child of liveRef
+    while (node && node.parentNode !== liveRef.current) {
+      node = node.parentNode;
+    }
+    if (node && node !== liveRef.current) {
+      node.remove();
+      showToast("Block deleted", "ok");
+    }
+    setToolbar(t => ({ ...t, show: false }));
+  }, [showToast]);
+
   const getCurrentHtml = useCallback(() => {
-    return liveRef.current ? liveRef.current.innerHTML : docHtml;
+    if (!liveRef.current) return docHtml;
+    // Wrap in proper HTML shell for Puppeteer
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <style>
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Inter, Arial, sans-serif; background: #f0f4f8; padding: 20px; }
+        [contenteditable] { outline: none; }
+      </style>
+    </head><body>${liveRef.current.innerHTML}</body></html>`;
   }, [docHtml]);
 
   const generate = async () => {
@@ -460,7 +589,7 @@ const DocCreator = memo(({ showToast }) => {
     } finally { setLoading(false); }
   };
 
-  // ── PDF: send current (possibly edited) innerHTML to Puppeteer on backend ──
+  // ── PDF: verify Content-Type before treating as blob ──
   const downloadPDF = useCallback(async () => {
     if (!docHtml || pdfLoading) return;
     setPdfLoading(true);
@@ -473,23 +602,32 @@ const DocCreator = memo(({ showToast }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ html, filename }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown server error" }));
-        throw new Error(err.error || `Server error ${res.status}`);
+
+      // Check content-type FIRST — if it's JSON, it's an error response
+      const contentType = res.headers.get("content-type") || "";
+      if (!res.ok || contentType.includes("application/json")) {
+        const err = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
+        throw new Error(err.error || "PDF generation failed on server");
       }
+      if (!contentType.includes("application/pdf")) {
+        throw new Error(`Unexpected response type: ${contentType}`);
+      }
+
       const blob = await res.blob();
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement("a");
+      if (blob.size < 100) throw new Error("PDF is empty — Puppeteer may have failed");
+
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement("a");
       a.href = url; a.download = filename + ".pdf";
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 10000);
       showToast("PDF downloaded ✓", "ok");
     } catch (err) {
       showToast("PDF failed: " + err.message, "err");
+      console.error("PDF error:", err);
     } finally { setPdfLoading(false); }
   }, [docHtml, pdfLoading, ctx, getCurrentHtml, showToast]);
 
-  // ── HTML: export current (possibly edited) content ──
   const downloadHTML = useCallback(() => {
     if (!docHtml) return;
     const html = getCurrentHtml();
@@ -506,7 +644,6 @@ const DocCreator = memo(({ showToast }) => {
       {/* ── Left: inputs ── */}
       <div className="doc-input-col">
         <div className="doc-cards-scroll">
-
           <div className="input-card">
             <div className="input-card-hdr"><h4>Context</h4></div>
             <div className="ctx-grid">
@@ -553,34 +690,65 @@ const DocCreator = memo(({ showToast }) => {
         </button>
       </div>
 
-      {/* ── Right: full-width live-editable preview ── */}
+      {/* ── Right: live-editable preview + toolbar ── */}
       <div className="panel doc-output-col">
         {loading && <div className="loading-bar" />}
 
+        {/* ── Panel header ── */}
         <div className="panel-hdr">
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span className="panel-title">Live Preview</span>
-            {docHtml && (
-              <span style={{ fontSize: 9, color: "var(--muted)", fontWeight: 500, border: "1px solid var(--border)", borderRadius: 4, padding: "2px 6px" }}>
-                click to edit
-              </span>
+            {docHtml && !loading && (
+              <>
+                {/* Editing action buttons */}
+                <button className="doc-tool-btn" onClick={addStep} title="Add a new call flow step">
+                  + Step
+                </button>
+                <button className="doc-tool-btn" onClick={addCard} title="Add a new info card">
+                  + Card
+                </button>
+                <button className="doc-tool-btn doc-tool-del" onClick={deleteBlock} title="Delete the block your cursor is in">
+                  ✕ Block
+                </button>
+              </>
             )}
           </div>
           {docHtml && (
             <div className="dl-bar">
-              <button className="btn-dl" onClick={downloadHTML} title="Export current content as .html">↓ HTML</button>
-              <button className="btn-pdf" onClick={downloadPDF} disabled={pdfLoading} title="Puppeteer renders current content as PDF">
+              <button className="btn-dl" onClick={downloadHTML}>↓ HTML</button>
+              <button className="btn-pdf" onClick={downloadPDF} disabled={pdfLoading}>
                 {pdfLoading ? <><span className="btn-pdf-spin" /> Generating…</> : "↓ PDF"}
               </button>
             </div>
           )}
         </div>
 
+        {/* ── Floating text-format toolbar (shows on selection) ── */}
+        {toolbar.show && (
+          <div
+            ref={toolbarRef}
+            className="float-toolbar"
+            style={{ left: toolbar.x, top: toolbar.y }}
+            onMouseDown={(e) => e.preventDefault()}
+          >
+            <button onClick={() => execCmd("bold")}        title="Bold"><strong>B</strong></button>
+            <button onClick={() => execCmd("italic")}      title="Italic"><em>I</em></button>
+            <button onClick={() => execCmd("underline")}   title="Underline"><u>U</u></button>
+            <div className="float-sep" />
+            <button onClick={() => execCmd("foreColor", "#007A7A")} title="Teal" style={{ color: "#007A7A" }}>A</button>
+            <button onClick={() => execCmd("foreColor", "#0D2B4E")} title="Navy" style={{ color: "#0D2B4E" }}>A</button>
+            <button onClick={() => execCmd("foreColor", "#C9882A")} title="Gold" style={{ color: "#C9882A" }}>A</button>
+            <button onClick={() => execCmd("foreColor", "#C0392B")} title="Red"  style={{ color: "#C0392B" }}>A</button>
+            <div className="float-sep" />
+            <button onClick={() => execCmd("removeFormat")} title="Clear" style={{ fontSize: 10 }}>✕</button>
+          </div>
+        )}
+
         {loading && (
           <div className="loading">
             <div className="spinner" />
             <p>GPT-4o is writing your document…</p>
-            <p style={{ fontSize: 11, color: "#bbb" }}>Generating stages, scripts & evaluation framework</p>
+            <p style={{ fontSize: 11, color: "#bbb" }}>30–60 seconds for a full doc</p>
           </div>
         )}
 
@@ -588,13 +756,13 @@ const DocCreator = memo(({ showToast }) => {
           <div className="empty-state">
             <div className="empty-icon" />
             <p style={{ fontWeight: 500, color: "#555" }}>Your document will appear here</p>
-            <p style={{ fontSize: 11 }}>Click anywhere to edit after generation</p>
+            <p style={{ fontSize: 11 }}>Select text to format · Use + Step / + Card to add blocks</p>
           </div>
         )}
 
-        {/* ── Contenteditable live preview — click to edit directly ── */}
+        {/* ── Contenteditable full-page live preview ── */}
         {!loading && (
-          <div className="doc-result-body" style={{ display: docHtml ? "flex" : "none" }}>
+          <div ref={wrapRef} className="doc-result-body" style={{ display: docHtml ? "flex" : "none", position: "relative" }}>
             <div className="doc-live-wrap">
               <div
                 ref={liveRef}
@@ -602,6 +770,8 @@ const DocCreator = memo(({ showToast }) => {
                 contentEditable={true}
                 suppressContentEditableWarning={true}
                 spellCheck={false}
+                onMouseUp={handleSelect}
+                onKeyUp={handleSelect}
               />
             </div>
           </div>
