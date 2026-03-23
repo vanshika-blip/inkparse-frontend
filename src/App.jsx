@@ -28,6 +28,7 @@ const css = `
   @import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { overflow: hidden; }
 
   :root {
     --bg: #f7f7f7;
@@ -52,7 +53,8 @@ const css = `
 
   .app {
     height: 100vh;
-    width: 100%;
+    width: 100vw;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -69,6 +71,8 @@ const css = `
     gap: 16px;
     flex-shrink: 0;
     width: 100%;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .hdr-brand {
@@ -163,7 +167,9 @@ const css = `
   /* ── Main content area ── */
   .main {
     flex: 1;
+    width: 100%;
     min-height: 0;
+    min-width: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -172,6 +178,8 @@ const css = `
   /* ── Workspace ── */
   .workspace {
     flex: 1;
+    width: 100%;
+    min-width: 0;
     display: flex;
     gap: 12px;
     padding: 14px;
@@ -378,7 +386,7 @@ const css = `
   .dl-bar { display: flex; gap: 5px; }
 
   /* ── Result ── */
-  .result-panel { flex: 1; min-width: 0; }
+  .result-panel { flex: 1; min-width: 0; width: 0; }
 
   .result-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
   .edit-col { width: 42%; border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
@@ -521,6 +529,8 @@ const css = `
   /* ── Doc section ── */
   .doc-workspace {
     flex: 1;
+    width: 100%;
+    min-width: 0;
     display: flex;
     gap: 12px;
     padding: 14px;
