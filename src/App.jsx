@@ -166,12 +166,21 @@ const css = `
   .doc-preview-full { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   .doc-iframe { flex: 1; border: none; min-height: 0; background: white; width: 100%; border-radius: 0 0 var(--r) var(--r); }
 
-  /* ── Doc split view ── */
-  .doc-result-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
-  .doc-edit-col { width: 38%; border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; flex-shrink: 0; }
-  .doc-edit-area { flex: 1; width: 100%; border: none; outline: none; resize: none; padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 10.5px; line-height: 1.7; color: #374151; background: #fafafa; overflow: auto; white-space: pre; min-height: 0; tab-size: 2; }
-  .doc-preview-col { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-  .doc-iframe { flex: 1; border: none; min-height: 0; background: white; width: 100%; }
+  /* ── Doc output: contenteditable live preview (full width, no HTML editor) ── */
+  .doc-result-body { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .doc-live-wrap { flex: 1; overflow: auto; min-height: 0; background: var(--surf3); padding: 16px; }
+  .doc-live-inner {
+    background: white;
+    min-height: 100%;
+    border-radius: 6px;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.07);
+    outline: none;
+    cursor: text;
+    padding: 0;
+    overflow: hidden;
+  }
+  .doc-live-inner:focus-within { box-shadow: 0 0 0 2px rgba(0,122,122,0.18), 0 1px 8px rgba(0,0,0,0.07); }
+
 
   /* ── Input cards ── */
   .input-card { background: var(--surf); border: 1px solid var(--border); border-radius: var(--r); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
@@ -416,20 +425,25 @@ const DocCreator = memo(({ showToast }) => {
   const [pdfLoading, setPdfLoading]     = useState(false);
   const [error, setError]               = useState("");
 
-  const previewIframeRef = useRef(null);  // visible preview iframe
+  // The live-editable container — we inject innerHTML once, then read it back for PDF/HTML export
+  const liveRef = useRef(null);
 
-  // Keep preview iframe in sync with edited HTML
-  const syncPreview = useCallback((html) => {
-    if (previewIframeRef.current) {
-      previewIframeRef.current.srcdoc = html;
+  // Inject HTML into the contenteditable div whenever docHtml changes from generation
+  useEffect(() => {
+    if (liveRef.current && docHtml) {
+      liveRef.current.innerHTML = docHtml;
     }
-  }, []);
+  }, [docHtml]);
 
-  useEffect(() => { if (docHtml) syncPreview(docHtml); }, [docHtml, syncPreview]);
+  // Read current edited content from the DOM (user may have edited it)
+  const getCurrentHtml = useCallback(() => {
+    return liveRef.current ? liveRef.current.innerHTML : docHtml;
+  }, [docHtml]);
 
   const generate = async () => {
     if (!scriptPrompt && !evalPrompt) { setError("Please provide at least one prompt."); return; }
     setLoading(true); setError(""); setDocHtml("");
+    if (liveRef.current) liveRef.current.innerHTML = "";
     try {
       const res = await fetch(`${BACKEND_URL}/api/generate-doc`, {
         method: "POST",
@@ -446,52 +460,45 @@ const DocCreator = memo(({ showToast }) => {
     } finally { setLoading(false); }
   };
 
-  // ── PDF: inject colour-print CSS into a hidden iframe, call print() on it ──
-  // ── PDF: POST HTML → Puppeteer on backend → real .pdf binary download ──
+  // ── PDF: send current (possibly edited) innerHTML to Puppeteer on backend ──
   const downloadPDF = useCallback(async () => {
     if (!docHtml || pdfLoading) return;
     setPdfLoading(true);
     showToast("Generating PDF…", "info");
     try {
+      const html     = getCurrentHtml();
       const filename = [ctx.client, ctx.product, ctx.version].filter(Boolean).join("_") || "AI_Call_Documentation";
       const res = await fetch(`${BACKEND_URL}/api/html-to-pdf`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html: docHtml, filename }),
+        body: JSON.stringify({ html, filename }),
       });
-
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Unknown server error" }));
         throw new Error(err.error || `Server error ${res.status}`);
       }
-
       const blob = await res.blob();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
-      a.href     = url;
-      a.download = filename + ".pdf";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      a.href = url; a.download = filename + ".pdf";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 10000);
-
       showToast("PDF downloaded ✓", "ok");
     } catch (err) {
       showToast("PDF failed: " + err.message, "err");
-    } finally {
-      setPdfLoading(false);
-    }
-  }, [docHtml, pdfLoading, ctx, showToast]);
+    } finally { setPdfLoading(false); }
+  }, [docHtml, pdfLoading, ctx, getCurrentHtml, showToast]);
 
-  // Download raw HTML
+  // ── HTML: export current (possibly edited) content ──
   const downloadHTML = useCallback(() => {
     if (!docHtml) return;
+    const html = getCurrentHtml();
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([docHtml], { type: "text/html" }));
+    a.href = URL.createObjectURL(new Blob([html], { type: "text/html" }));
     a.download = "AI_Call_Documentation.html";
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     showToast("HTML downloaded ✓", "ok");
-  }, [docHtml, showToast]);
+  }, [docHtml, getCurrentHtml, showToast]);
 
   return (
     <div className="doc-workspace">
@@ -546,16 +553,23 @@ const DocCreator = memo(({ showToast }) => {
         </button>
       </div>
 
-      {/* ── Right: split editor + preview ── */}
+      {/* ── Right: full-width live-editable preview ── */}
       <div className="panel doc-output-col">
         {loading && <div className="loading-bar" />}
 
         <div className="panel-hdr">
-          <span className="panel-title">Document</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="panel-title">Live Preview</span>
+            {docHtml && (
+              <span style={{ fontSize: 9, color: "var(--muted)", fontWeight: 500, border: "1px solid var(--border)", borderRadius: 4, padding: "2px 6px" }}>
+                click to edit
+              </span>
+            )}
+          </div>
           {docHtml && (
             <div className="dl-bar">
-              <button className="btn-dl" onClick={downloadHTML} title="Download .html file">↓ HTML</button>
-              <button className="btn-pdf" onClick={downloadPDF} disabled={pdfLoading} title="Server renders a real PDF — direct download">
+              <button className="btn-dl" onClick={downloadHTML} title="Export current content as .html">↓ HTML</button>
+              <button className="btn-pdf" onClick={downloadPDF} disabled={pdfLoading} title="Puppeteer renders current content as PDF">
                 {pdfLoading ? <><span className="btn-pdf-spin" /> Generating…</> : "↓ PDF"}
               </button>
             </div>
@@ -574,40 +588,22 @@ const DocCreator = memo(({ showToast }) => {
           <div className="empty-state">
             <div className="empty-icon" />
             <p style={{ fontWeight: 500, color: "#555" }}>Your document will appear here</p>
-            <p style={{ fontSize: 11 }}>Paste prompts and click Generate</p>
+            <p style={{ fontSize: 11 }}>Click anywhere to edit after generation</p>
           </div>
         )}
 
-        {/* ── Split: HTML editor (left) + iframe preview (right) ── */}
-        {docHtml && !loading && (
-          <div className="doc-result-body">
-
-            {/* HTML source editor */}
-            <div className="doc-edit-col">
-              <div className="panel-label">HTML — edit freely</div>
-              <textarea
-                className="doc-edit-area"
-                value={docHtml}
-                onChange={(e) => {
-                  setDocHtml(e.target.value);
-                  syncPreview(e.target.value);
-                }}
+        {/* ── Contenteditable live preview — click to edit directly ── */}
+        {!loading && (
+          <div className="doc-result-body" style={{ display: docHtml ? "flex" : "none" }}>
+            <div className="doc-live-wrap">
+              <div
+                ref={liveRef}
+                className="doc-live-inner"
+                contentEditable={true}
+                suppressContentEditableWarning={true}
                 spellCheck={false}
               />
             </div>
-
-            {/* Live iframe preview */}
-            <div className="doc-preview-col">
-              <div className="panel-label">Live Preview</div>
-              <iframe
-                ref={previewIframeRef}
-                className="doc-iframe"
-                title="Document Preview"
-                sandbox="allow-same-origin allow-scripts"
-                srcdoc={docHtml}
-              />
-            </div>
-
           </div>
         )}
       </div>
