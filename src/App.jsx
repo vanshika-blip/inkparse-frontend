@@ -42,6 +42,9 @@ const css = `
     --muted: #aaaaaa;
     --muted2: #888888;
     --r: 10px;
+    --navy: #0D2B4E;
+    --teal: #007A7A;
+    --gold: #C9882A;
   }
 
   body { font-family: 'Archivo', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
@@ -101,13 +104,15 @@ const css = `
   .btn-dl { font-family: 'Archivo', sans-serif; font-size: 10px; font-weight: 600; background: var(--surf2); border: 1px solid var(--border2); color: var(--ink2); padding: 4px 11px; border-radius: 5px; cursor: pointer; transition: all 0.13s; }
   .btn-dl:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
 
-  /* ── PDF / Print button ── */
-  .btn-pdf { font-family: 'Archivo', sans-serif; font-size: 10px; font-weight: 700; background: #0D2B4E; color: #fff; border: none; padding: 4px 12px; border-radius: 5px; cursor: pointer; transition: all 0.13s; letter-spacing: 0.2px; }
-  .btn-pdf:hover { background: #1a4a7a; }
+  /* ── PDF button ── */
+  .btn-pdf { font-family: 'Archivo', sans-serif; font-size: 10px; font-weight: 700; background: var(--navy); color: #fff; border: none; padding: 4px 12px; border-radius: 5px; cursor: pointer; transition: all 0.13s; letter-spacing: 0.2px; display: flex; align-items: center; gap: 5px; }
+  .btn-pdf:hover:not(:disabled) { background: #1a4a7a; }
+  .btn-pdf:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-pdf-spin { width: 9px; height: 9px; border: 1.5px solid transparent; border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
 
   .dl-bar { display: flex; gap: 6px; align-items: center; }
 
-  /* ── Result panels ── */
+  /* ── Result panels (Image section) ── */
   .result-panel { flex: 1; min-width: 0; width: 0; }
   .result-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
   .edit-col { width: 42%; border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
@@ -148,8 +153,8 @@ const css = `
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .error-box { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 13px; border-radius: 7px; font-size: 11px; margin: 10px; flex-shrink: 0; }
-  .loading-bar { height: 2px; background: linear-gradient(90deg, #111, #ccc, #111); background-size: 200%; animation: lbar 1.2s linear infinite; flex-shrink: 0; }
-  @keyframes lbar { from { background-position: 200%; } to { background-position: -200%; } }
+  .loading-bar { height: 2px; background: linear-gradient(90deg, #0D2B4E, #007A7A, #C9882A, #0D2B4E); background-size: 300%; animation: lbar 1.6s ease infinite; flex-shrink: 0; }
+  @keyframes lbar { 0% { background-position: 0%; } 100% { background-position: 300%; } }
 
   /* ── Doc workspace ── */
   .doc-workspace { flex: 1; width: 100%; min-width: 0; display: flex; gap: 12px; padding: 14px; min-height: 0; overflow: hidden; }
@@ -157,14 +162,9 @@ const css = `
   .doc-cards-scroll { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; min-height: 0; }
   .doc-output-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
-  /* ── Doc split view ── */
-  .doc-result-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
-
-  .doc-edit-col { width: 40%; border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; flex-shrink: 0; }
-  .doc-edit-area { flex: 1; width: 100%; border: none; outline: none; resize: none; padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 10.5px; line-height: 1.7; color: #374151; background: #fafafa; overflow: auto; white-space: pre; min-height: 0; tab-size: 2; }
-
-  .doc-preview-col { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-  .doc-iframe { flex: 1; border: none; min-height: 0; background: white; width: 100%; }
+  /* ── Doc output: full preview only (no editor) ── */
+  .doc-preview-full { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .doc-iframe { flex: 1; border: none; min-height: 0; background: white; width: 100%; border-radius: 0 0 var(--r) var(--r); }
 
   /* ── Input cards ── */
   .input-card { background: var(--surf); border: 1px solid var(--border); border-radius: var(--r); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
@@ -190,8 +190,6 @@ const css = `
   @media (max-width: 640px) {
     .workspace, .doc-workspace { flex-direction: column; overflow-y: auto; }
     .upload-panel, .doc-input-col { width: 100%; }
-    .result-body, .doc-result-body { flex-direction: column; }
-    .edit-col, .doc-edit-col { width: 100%; border-right: none; border-bottom: 1px solid var(--border); min-height: 180px; }
     .tab-pill-btn { padding: 5px 11px; font-size: 11px; }
     .hdr { padding: 0 12px; gap: 10px; }
   }
@@ -408,22 +406,17 @@ const DocCreator = memo(({ showToast }) => {
   const [ctx, setCtx]                   = useState({ client: "", product: "", version: "v1.0" });
   const [docHtml, setDocHtml]           = useState("");
   const [loading, setLoading]           = useState(false);
+  const [pdfLoading, setPdfLoading]     = useState(false);
   const [error, setError]               = useState("");
 
-  const iframeRef    = useRef(null);
-  const previewTimer = useRef(null);
+  const iframeRef = useRef(null);
 
-  // Debounced live preview — updates iframe 400ms after user stops typing
-  const updatePreview = useCallback((html) => {
-    if (previewTimer.current) clearTimeout(previewTimer.current);
-    previewTimer.current = setTimeout(() => {
-      if (iframeRef.current) iframeRef.current.srcdoc = html;
-    }, 400);
-  }, []);
-
+  // Update iframe whenever docHtml changes
   useEffect(() => {
-    if (docHtml) updatePreview(docHtml);
-  }, [docHtml, updatePreview]);
+    if (docHtml && iframeRef.current) {
+      iframeRef.current.srcdoc = docHtml;
+    }
+  }, [docHtml]);
 
   const generate = async () => {
     if (!scriptPrompt && !evalPrompt) { setError("Please provide at least one prompt."); return; }
@@ -444,21 +437,75 @@ const DocCreator = memo(({ showToast }) => {
     } finally { setLoading(false); }
   };
 
-  // Trigger browser print dialog on the iframe (user picks "Save as PDF")
-  const printPDF = () => {
-    if (!iframeRef.current) return;
-    iframeRef.current.contentWindow.focus();
-    iframeRef.current.contentWindow.print();
-  };
+  // ── PDF: open in new tab with print-colour CSS and trigger print dialog ──
+  const downloadPDF = useCallback(() => {
+    if (!docHtml || pdfLoading) return;
+    setPdfLoading(true);
 
-  // Download raw HTML file
-  const downloadHTML = () => {
+    try {
+      // Inject print-colour CSS into the document before opening
+      const printCss = `
+        <style id="inkparse-print">
+          @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+            body { margin: 0 !important; }
+            .no-print { display: none !important; }
+          }
+        </style>
+      `;
+
+      // Insert print CSS right after <head>
+      let printHtml = docHtml;
+      if (printHtml.includes("<head>")) {
+        printHtml = printHtml.replace("<head>", "<head>" + printCss);
+      } else if (printHtml.includes("<HEAD>")) {
+        printHtml = printHtml.replace("<HEAD>", "<HEAD>" + printCss);
+      } else {
+        printHtml = printCss + printHtml;
+      }
+
+      // Also inject an auto-print script
+      const printScript = `<script>window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 800); });<\/script>`;
+      if (printHtml.includes("</body>")) {
+        printHtml = printHtml.replace("</body>", printScript + "</body>");
+      } else {
+        printHtml = printHtml + printScript;
+      }
+
+      const blob = new Blob([printHtml], { type: "text/html;charset=utf-8" });
+      const url  = URL.createObjectURL(blob);
+      const win  = window.open(url, "_blank");
+
+      if (!win) {
+        // Popup blocked fallback: download as HTML
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "AI_Call_Documentation.html";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast("Popup blocked — downloaded as HTML instead", "info");
+      } else {
+        showToast("Print dialog will open — choose 'Save as PDF'", "info");
+        // Revoke blob URL after enough time
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      }
+    } catch (err) {
+      showToast("PDF export failed: " + err.message, "err");
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [docHtml, pdfLoading, showToast]);
+
+  // Download raw HTML
+  const downloadHTML = useCallback(() => {
     if (!docHtml) return;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([docHtml], { type: "text/html" }));
     a.download = "AI_Call_Documentation.html";
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  };
+    showToast("HTML downloaded ✓", "ok");
+  }, [docHtml, showToast]);
 
   return (
     <div className="doc-workspace">
@@ -513,16 +560,18 @@ const DocCreator = memo(({ showToast }) => {
         </button>
       </div>
 
-      {/* ── Right: output panel ── */}
+      {/* ── Right: output panel — live preview only ── */}
       <div className="panel doc-output-col">
         {loading && <div className="loading-bar" />}
 
         <div className="panel-hdr">
-          <span className="panel-title">Generated Document</span>
+          <span className="panel-title">Live Preview</span>
           {docHtml && (
             <div className="dl-bar">
               <button className="btn-dl" onClick={downloadHTML} title="Download .html file">↓ HTML</button>
-              <button className="btn-pdf" onClick={printPDF} title="Open print dialog — choose 'Save as PDF'">⎙ Print / PDF</button>
+              <button className="btn-pdf" onClick={downloadPDF} disabled={pdfLoading} title="Opens in new tab — choose Save as PDF in print dialog">
+                {pdfLoading ? <><span className="btn-pdf-spin" /> Opening…</> : "⎙ Save as PDF"}
+              </button>
             </div>
           )}
         </div>
@@ -538,38 +587,21 @@ const DocCreator = memo(({ showToast }) => {
         {!docHtml && !loading && (
           <div className="empty-state">
             <div className="empty-icon" />
-            <p style={{ fontWeight: 500, color: "#555" }}>Your client document will appear here</p>
+            <p style={{ fontWeight: 500, color: "#555" }}>Your document will appear here</p>
             <p style={{ fontSize: 11 }}>Paste prompts and click Generate</p>
           </div>
         )}
 
-        {/* ── Split: HTML editor + iframe preview ── */}
+        {/* ── Full-width live iframe preview ── */}
         {docHtml && !loading && (
-          <div className="doc-result-body">
-
-            {/* Left — editable HTML source */}
-            <div className="doc-edit-col">
-              <div className="panel-label">HTML Source — edit freely</div>
-              <textarea
-                className="doc-edit-area"
-                value={docHtml}
-                onChange={(e) => setDocHtml(e.target.value)}
-                spellCheck={false}
-              />
-            </div>
-
-            {/* Right — live iframe preview */}
-            <div className="doc-preview-col">
-              <div className="panel-label">Live Preview</div>
-              <iframe
-                ref={iframeRef}
-                className="doc-iframe"
-                title="Document Preview"
-                sandbox="allow-same-origin allow-scripts"
-                srcdoc={docHtml}
-              />
-            </div>
-
+          <div className="doc-preview-full">
+            <iframe
+              ref={iframeRef}
+              className="doc-iframe"
+              title="Document Preview"
+              sandbox="allow-same-origin allow-scripts"
+              srcdoc={docHtml}
+            />
           </div>
         )}
       </div>
